@@ -9,8 +9,8 @@ import type { RawContent } from "../data/content";
  * Neither should be reachable by a page the owner did not open, so every
  * message is dropped unless its origin is one the editor is served from. The
  * deployed editor's origin is configured at build (`VITE_PREVIEW_EDITOR_ORIGIN`,
- * comma-separated for more than one); localhost is here for developing the two
- * together. This is the same suspicion the editor already aims the other way,
+ * comma-separated for more than one); localhost is allowed in a development
+ * build only, for developing the two together. This is the same suspicion the editor already aims the other way,
  * treating the site it fetches as untrusted.
  */
 
@@ -44,17 +44,31 @@ export function normalizeOrigins(raw: string | undefined): string[] {
     });
 }
 
-function configuredOrigins(): string[] {
-  return normalizeOrigins(
-    (import.meta.env as Record<string, string | undefined>)["VITE_PREVIEW_EDITOR_ORIGIN"],
-  );
+/** Where the editor is served from while the two are developed together. */
+const LOCAL_EDITOR_ORIGINS = ["http://localhost:3001", "http://localhost:5173"];
+
+/**
+ * The origins an editor may post from: the configured list, and in a
+ * development build the local ones too.
+ *
+ * The local origins used to be in every build, the deployed one included,
+ * so any page a developer's machine happened to serve on one of those ports
+ * could post content into the live preview at the site's own origin. The
+ * site holds no cookie or secret and React refuses a `javascript:` address,
+ * so what that bought was bounded — measured in the security sweep — but an
+ * allowlist with a hole in it is not an allowlist. A built site driven from
+ * a local editor names the local origin in `VITE_PREVIEW_EDITOR_ORIGIN` at
+ * build time instead, which is what the variable is for.
+ */
+export function editorOrigins(configured: string | undefined, development: boolean): string[] {
+  const origins = normalizeOrigins(configured);
+  return development ? [...origins, ...LOCAL_EDITOR_ORIGINS] : origins;
 }
 
-const ALLOWED_EDITOR_ORIGINS: readonly string[] = [
-  ...configuredOrigins(),
-  "http://localhost:3001",
-  "http://localhost:5173",
-];
+const ALLOWED_EDITOR_ORIGINS: readonly string[] = editorOrigins(
+  (import.meta.env as Record<string, string | undefined>)["VITE_PREVIEW_EDITOR_ORIGIN"],
+  import.meta.env.DEV,
+);
 
 /** The origins the preview will take content from — for a diagnostic message
  *  when it drops one it does not know. */

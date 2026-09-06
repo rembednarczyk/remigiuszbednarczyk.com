@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  editorOrigins,
   isContentMessage,
   isHighlightMessage,
   isScrollMessage,
@@ -17,8 +18,27 @@ import { STATIC_RAW } from "../data/content";
  * must not be mistaken for content.
  */
 
+describe("editorOrigins", () => {
+  it("is the configured list alone in a production build", () => {
+    // The hole the security sweep found: localhost in every build, so any
+    // page a developer's machine served on those ports could post content
+    // into the live preview.
+    expect(editorOrigins("https://editor.example", false)).toEqual(["https://editor.example"]);
+    expect(editorOrigins(undefined, false)).toEqual([]);
+  });
+
+  it("adds the local origins in a development build, after the configured ones", () => {
+    expect(editorOrigins("https://editor.example", true)).toEqual([
+      "https://editor.example",
+      "http://localhost:3001",
+      "http://localhost:5173",
+    ]);
+  });
+});
+
 describe("originAllowed", () => {
-  it("allows the editor's dev origin", () => {
+  it("allows the editor's dev origin, this being a development build", () => {
+    expect(import.meta.env.DEV).toBe(true);
     expect(originAllowed("http://localhost:3001")).toBe(true);
   });
 
