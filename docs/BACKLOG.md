@@ -6,6 +6,82 @@ decided against — not when it is forgotten.
 
 ---
 
+## The first adversarial bughunt — what it found, what it rejected, what was left
+
+Run on 6 September 2026 the way *Ways of Working* Part 5 describes: four
+read-only passes over separate slices, each trying to prove the code wrong
+and rejecting its own false positives before reporting, and none of them
+fixing anything — every fix came back through the ordinary loop, red first,
+with a mutation table in its pull request. The lanes were the site's preview
+seam, the editor's app wiring and server, the editor's form, and the checks
+themselves in both repositories. Thirty-four findings; thirty-one fixed in
+four pull requests — the site's #119 (preview) and #120 (checks), the
+editor's #54 (app) and #55 (form, and the editor's two checks) — and three
+accepted with their reasons written down, below. The editor's own
+`docs/BACKLOG.md` holds the editor's half of this record.
+
+**The preview seam, six.** Certification cards said they were edited in
+`certifications.json` while the page draws `certificationsSummary.json` —
+green in the suite only because both files happened to hold three groups.
+Content that threw at render rather than in `buildContent` unmounted the
+whole preview, silently, until a reload; the page layout is validated now
+and a boundary inside the preview keeps the last good page and reports the
+error. A scheme-less editor origin in `VITE_PREVIEW_EDITOR_ORIGIN` parsed to
+the opaque origin `"null"`, which is exactly what a sandboxed or `file://`
+page sends. The about band could not be highlighted. The preview ran the
+site's analytics, banner and auto-print. Two bands of one shape collided on
+React keys.
+
+**The checks, twelve — ten the site's.** Every one was a test green on
+something other than its claim: a resource hint and a script tag held while
+an inline loader for the same host passed; a scan that never read the one
+file its own comment named; two years held anywhere in a file; comments
+read as imports; a "not registered" accepted from anywhere in a document; a
+hook held by its doc comment; three literal counts under a comment promising
+nobody would have to remember them; two assertions that had never once run
+in CI because `test` precedes `build`; three plugins writing into the
+repository's own dist directory whatever the build; and five numbers in prose that the
+code had moved past. The two that were the editor's — a vocabulary parser
+reading half of every list, and throttle numbers held by no test — are in
+the editor's file.
+
+**Rejected by the passes, so not to be re-hunted.** The honeypot cannot be
+autofilled (a checkbox). `originAllowed` on a trailing path, an uppercase
+host or a default port: `new URL().origin` normalises all three the way
+`event.origin` does. The editing outline is not clipped by the card's own
+`overflow-hidden`. `pickAt` on the navigation, the modal, the hero buttons
+and the skip link. A stale highlight after a redraw. Every typo the facts
+builder can be handed throws inside `buildContent` and is reported.
+`tests/exportUse.test.ts` counts a same-named identifier in another file as
+a consumer — a scratch program found zero such coincidences today, so the
+mechanism is weak and there is no defect. `it.each` over a possibly empty
+list: every one asserts the length first. The preview path with a trailing
+slash shows the 404 view, by exact match — noted, not a defect.
+
+**Accepted, not fixed, and why.** The editor skips its walk to a band for a
+second after a click in the preview, which also skips a walk the owner asks
+for by clicking the sidebar in that second: the owner is already looking at
+the right place, and recording which anchor the pick opened is the fix if it
+ever bites. The editor's login throttle keys on the first `x-forwarded-for`
+entry, on the strength of Render prepending; if the platform appends, the
+per-caller limit is the attacker's to choose and only the global one holds.
+Not measured on Render yet — one request from a known address would settle
+it, and the last entry or the socket's own address is the change if it
+appends. The
+editor names the site's origin twice, in its content policy and in its
+preview module, so a build pointed anywhere else is framed by nothing and
+says so nowhere; production points at the live site, and one source is a
+small change the next time either is touched.
+
+**What the checks lane teaches, for Part 0.** A test that reads source is
+green on whatever the source says, and this repository writes comments that
+say exactly what the code does — which is the same string. The mutation the
+PR template asks for has to be a mutation of the *defect the check names*,
+not of the check: put the loader back, delete the import, remove the call,
+and watch. Ten of twelve had never been shown their defect. And a number in
+prose is a claim nothing holds: the count comes from the constant or the
+sentence does not count.
+
 ## Tell the owner whether a save in the editor reached the page
 
 Written on 4 September 2026, the day of the first real edit made through

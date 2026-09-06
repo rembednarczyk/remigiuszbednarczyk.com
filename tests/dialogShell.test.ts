@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { isTestLike, listSourceFiles } from "../scripts/importGraph";
+import { withoutComments } from "../scripts/withoutComments";
 
 /**
  * Two dialogs wrote out the same shell: the portal into document.body, the
@@ -47,14 +48,17 @@ describe("the dialogs share one shell", () => {
   });
 
   it("keeps the parts a copy would silently drop", () => {
-    const shell = readFileSync(resolve(root, SHELL), "utf8");
+    // Comments out first: the shell's own doc comment names useModalA11y,
+    // and the bughunt deleted the call and its import and left this green
+    // on the prose. What is held is the call.
+    const shell = withoutComments(readFileSync(resolve(root, SHELL), "utf8"));
 
     expect(shell).toContain('role="dialog"');
     // Tells assistive technology the rest of the page is inert. A dialog
     // without it reads as part of the page behind.
     expect(shell).toContain('aria-modal="true"');
     // Escape, the focus trap, and focus returned to the trigger.
-    expect(shell).toContain("useModalA11y");
+    expect(shell).toContain("useModalA11y(");
     // The backdrop is one of the three ways out, and the only one with no
     // visible affordance to remind anyone it exists.
     expect(shell).toMatch(/onClick=\{onClose\}[\s\S]*?aria-hidden="true"/);

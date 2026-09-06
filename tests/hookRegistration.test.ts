@@ -89,9 +89,17 @@ describe("what the documents say about a hook that does not run", () => {
   it.each(Object.keys(NOT_REGISTERED))(
     "says plainly that %s is not registered",
     (script) => {
+      // Said near the name, not merely somewhere in the same document: the
+      // bughunt rewrote the caveat to say the hook runs, and the check
+      // stayed green on another sentence's "not registered" a page away.
+      // Near is within a few paragraphs of any mention of the script.
+      const NEAR = 1200;
       const quiet = DOCUMENTS.filter((file) => {
         const text = readFileSync(resolve(root, file), "utf8");
-        return !(text.includes(script) && /not registered/i.test(text));
+        const mentions = [...text.matchAll(new RegExp(script.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"))];
+        return !mentions.some((mention) =>
+          /not registered/i.test(text.slice(Math.max(0, mention.index - NEAR), mention.index + NEAR)),
+        );
       });
 
       expect(

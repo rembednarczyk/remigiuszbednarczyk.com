@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import * as cards from "../src/data/portfolioData";
 import * as facts from "../src/data/portfolioFacts";
 import { fillPlaceholders } from "../src/data/placeholders";
+import { withoutComments } from "../scripts/withoutComments";
 
 /**
  * The split is only worth having if it stays true.
@@ -99,8 +100,13 @@ describe("the content tree", () => {
     // layout is read by the template that draws it, which is where a
     // layout belongs, and a check that knew about only two readers would
     // have called that file an orphan.
+    //
+    // Comments out first. Thirteen section files name `pageLayout.json` in
+    // their doc comments — tests/sectionIdentity.test.ts requires them to —
+    // so the bughunt removed its real import from App.tsx and this stayed
+    // green on the prose about it; cvLayout.json had the same cover.
     const modules = listSources(resolve(root, "src"))
-      .map((file) => readFileSync(file, "utf8"))
+      .map((file) => withoutComments(readFileSync(file, "utf8")))
       .join("\n");
 
     const unread = contentFiles.filter((file) => !modules.includes(`content/${file}`));

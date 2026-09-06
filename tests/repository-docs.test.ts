@@ -227,11 +227,13 @@ const codeWithoutComments = [
 /**
  * Names the documents use that live only inside a string, with the reason.
  *
- * Two left, and the list shrank on its own. It held four when it was
- * written; registering the shell-edit hook put `PreToolUse` and `Bash` into
- * `.claude/settings.json` as a real key and a real matcher, and the check
- * below — an exemption is unnecessary once the code names the thing outside
- * a string — reported both. Neither was removed by anyone remembering to.
+ * The list moves on its own, in both directions, and this comment does not
+ * count it — it said "two left" while the list held five. It held four when
+ * it was written; registering the shell-edit hook put `PreToolUse` and
+ * `Bash` into `.claude/settings.json` as a real key and a real matcher, and
+ * the check below — an exemption is unnecessary once the code names the
+ * thing outside a string — reported both. Neither was removed by anyone
+ * remembering to; unregistering the hook put both back, the same way.
  */
 const NAMED_ONLY_IN_STRINGS: Record<string, string> = {
   Bash: "the tool the shell-edit hook would match on, which reaches it only as a string in a payload now that the matcher naming it is out of .claude/settings.json",

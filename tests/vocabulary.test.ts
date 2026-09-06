@@ -80,9 +80,18 @@ describe("the vocabulary the build serves", () => {
 
   it("is the file that reaches the editor, if a build is here to read", () => {
     // Skipped rather than failed without a build, the way the bundle check
-    // in contactParts is: npm test runs before npm run build.
+    // in contactParts is: npm test runs before npm run build. Which meant,
+    // the bughunt found, that in CI this had never run at all. So
+    // check:quality runs it again after the build as `test:built`, and
+    // there, with EXPECT_BUILD set, a missing build is a failure — a step
+    // that stands down silently is the thing it was added to stop.
     const file = resolve(root, "dist/vocabulary.json");
-    if (!existsSync(file)) return;
+    if (!existsSync(file)) {
+      if (process.env["EXPECT_BUILD"] !== undefined) {
+        throw new Error("test:built ran and there is no dist/vocabulary.json to hold to the module");
+      }
+      return;
+    }
 
     expect(JSON.parse(readFileSync(file, "utf8"))).toEqual(VOCABULARY);
   });

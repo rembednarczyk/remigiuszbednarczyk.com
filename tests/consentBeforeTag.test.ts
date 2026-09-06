@@ -47,6 +47,22 @@ describe("what the document reaches for on its own", () => {
     ).toEqual([]);
   });
 
+  it("names the analytics host nowhere but in a comment, whatever the shape of the reach", () => {
+    // The two checks above hold a `<script src>` and a resource hint. The
+    // bughunt built the tag a third way — an inline
+    // `document.createElement('script')` with the same src, before the
+    // consent defaults — and both stayed green while the document reached
+    // for the host on every visit. So the whole document is held, comments
+    // aside: the one legitimate mention of the host is the sentence saying
+    // why it is not here.
+    const withoutHtmlComments = html.replace(/<!--[\s\S]*?-->/g, "");
+
+    expect(
+      withoutHtmlComments,
+      "index.html names the analytics host outside a comment, so something in it can reach for the tag before consent",
+    ).not.toMatch(THIRD_PARTY_ANALYTICS);
+  });
+
   it("still queues the consent defaults, which have to run first", () => {
     // Removing the tag must not remove the denial that governs it once the
     // visitor accepts and the tag finally loads.

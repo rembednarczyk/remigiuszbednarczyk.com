@@ -27,10 +27,23 @@ describe("the profile language models fetch", () => {
   it("covers every job, with the period the page shows", () => {
     // The dash differs between the two surfaces: the page renders "2021 -
     // Present" and prose reads better as "2021-Present". Only the years are
-    // compared, since that is the fact rather than the punctuation.
+    // compared, since that is the fact rather than the punctuation — but on
+    // the line that names the role. Held anywhere in the file, a year is
+    // nearly always there: the bughunt deleted the whole Application Tester
+    // line and 2014 was still in the credentials, 2017 in the next job.
+    // The page's role can carry a second half after " / " (an assignment)
+    // that the profile leaves out, so the first half is what the line has
+    // to name.
+    const lines = llm.split("\n");
     const missing = experienceData
-      .map((job) => job.period.split(/\s*[-–]\s*/).map((p) => p.trim()))
-      .filter(([from, to]) => !(llm.includes(from) && llm.includes(to)));
+      .map((job) => ({
+        role: job.role.split(" / ")[0],
+        years: job.period.split(/\s*[-–]\s*/).map((p) => p.trim()),
+      }))
+      .filter(
+        ({ role, years: [from, to] }) =>
+          !lines.some((line) => line.includes(role) && line.includes(from) && line.includes(to)),
+      );
 
     expect(experienceData.length).toBeGreaterThan(3);
     expect(
