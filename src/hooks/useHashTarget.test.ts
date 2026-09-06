@@ -116,4 +116,18 @@ describe("addresses that name nothing", () => {
     expect(() => renderHook(() => useHashTarget())).not.toThrow();
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
+
+  it("survives a hash that will not decode, rather than crashing the page", () => {
+    // A stray `%` — `#%`, `#100%`, a half-written escape — makes
+    // decodeURIComponent throw. This runs in the page's mount effect, so an
+    // unguarded throw reaches the boundary around the whole app and the
+    // fallback reloads the same bad address forever. A hash that will not
+    // decode names nothing here, so it stays put like any other.
+    addSection("experience");
+    for (const bad of ["#%", "#100%", "#%E0%A4%A", "#c++%"]) {
+      openWith(bad);
+      expect(() => renderHook(() => useHashTarget()), `hash ${bad}`).not.toThrow();
+    }
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
 });

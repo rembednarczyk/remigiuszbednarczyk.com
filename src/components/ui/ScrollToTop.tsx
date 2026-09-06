@@ -3,7 +3,13 @@ import { m, AnimatePresence } from "motion/react";
 import { ChevronUp } from "lucide-react";
 
 export function ScrollToTop() {
-  const [isVisible, setIsVisible] = useState(false);
+  // Decided from where the page already is, not only from the next scroll.
+  // This component is mounted once the consent banner is answered, which can
+  // happen after the visitor has scrolled deep into the page — the banner
+  // was over the content while they read. Read at the first render rather
+  // than set in the effect, or the button stays hidden until the next scroll,
+  // absent exactly where it is wanted.
+  const [isVisible, setIsVisible] = useState(() => window.scrollY > 300);
 
   useEffect(() => {
     let timeoutId: number | null = null;
