@@ -1,0 +1,32 @@
+# What keeps the pins fresh.
+#
+# The workflow pins every action to a commit rather than a tag, because a
+# tag is a name somebody can move and a commit is not — the sweep that
+# added this found all four pinned by tag. A pin that nobody bumps is a
+# different kind of stale, so Dependabot proposes the bump, one pull
+# request at a time, and the quality gate says whether it is safe. The
+# same for the npm dependencies: `npm audit` found one moderate advisory in
+# a dev-only tool the day this was written, with nobody to have noticed.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "Bump"
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Bump"
+    groups:
+      # One pull request for the routine patch and minor bumps, so a week's
+      # worth does not arrive as fifteen.
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
