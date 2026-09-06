@@ -14,9 +14,16 @@ import type { CvContact } from "../../types";
  * no separator, so a detail whose parts include a space loses that space.
  * Measured, on the two this repository has:
  *
- *     email, fragmented   "hello@remigiuszbednarczyk.com"   unchanged
- *     phone, fragmented   "+48530333243"                    grouping gone
- *     phone, whole        "+48 530 333 243"
+ *     email, fragmented   joins back to the address unchanged
+ *     phone, fragmented   loses the spaces that group its digits
+ *     phone, whole        keeps them
+ *
+ * The assembled address is deliberately not written out here. This comment
+ * ships in the sourcemap, a plain URL beside the bundle, and a harvester
+ * that fetches it would read a literal address out of the very file that
+ * explains why the address must never appear whole — the fourth bughunt
+ * found exactly that. The fragments below carry the shape without
+ * reassembling into something an email regex matches.
  *
  * So the phone number was being announced to a screen reader as one run of
  * twelve digits, on the printed CV and on the page, and had been since the

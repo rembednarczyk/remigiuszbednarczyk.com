@@ -145,4 +145,26 @@ describe("what ships to a visitor", () => {
 
     expect(shipped).not.toContain(cvData.header.email.display.join(""));
   });
+
+  it("carries the address in pieces in the sourcemap too, if a build is here", () => {
+    // The bundle fragments the address, but `sourcemap: true` ships the
+    // original source beside it as a plain `.js.map` URL — and the fourth
+    // bughunt found the assembled address written out in a source comment,
+    // reassembled in that map, a trivial fetch for a harvester. The map is
+    // where the fragmentation was quietly undone, so the map is held too.
+    const assets = resolve(root, "dist/assets");
+    if (!existsSync(assets)) {
+      if (process.env["EXPECT_BUILD"] !== undefined) {
+        throw new Error("test:built ran and there is no dist/assets to read the sourcemap from");
+      }
+      return;
+    }
+
+    const maps = readdirSync(assets)
+      .filter((file) => file.endsWith(".js.map"))
+      .map((file) => readFileSync(resolve(assets, file), "utf8"))
+      .join("\n");
+
+    expect(maps).not.toContain(cvData.header.email.display.join(""));
+  });
 });

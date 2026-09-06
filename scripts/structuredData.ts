@@ -100,10 +100,23 @@ export function buildPersonSchema(): PersonSchema {
 
 /** Indented to sit inside index.html's script tag without looking pasted in. */
 export function renderPersonSchema(): string {
-  return JSON.stringify(buildPersonSchema(), null, 2)
+  return escapeForScript(JSON.stringify(buildPersonSchema(), null, 2))
     .split("\n")
     .map((line) => `      ${line}`)
     .join("\n");
+}
+
+/**
+ * The one escaping a JSON string dropped inside a `<script>` needs: `<`, so a
+ * value holding `</script>` cannot close the tag early and turn the rest of
+ * the page into markup. `JSON.stringify` does not do it — it leaves `<` and
+ * `/` alone. Every value here is build-time data from portfolioFacts today,
+ * so nothing reaches it that carries `</script>`; this closes the class
+ * rather than trusting that to stay true, at the cost of two characters.
+ * `>` and `&` go with it, the trio a JSON-in-HTML escape always travels as.
+ */
+export function escapeForScript(json: string): string {
+  return json.replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
 }
 
 /** Matches the JSON-LD block index.html carries, whatever is inside it. */

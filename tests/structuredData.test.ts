@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   buildPersonSchema,
+  escapeForScript,
   injectPersonSchema,
   renderPersonSchema,
 } from "../scripts/structuredData";
@@ -82,6 +83,25 @@ describe("the generated Person schema", () => {
 
     expect(() => JSON.parse(rendered)).not.toThrow();
     expect(rendered.split("\n")[0]).toMatch(/^ {6}\{$/);
+    // The rendered block goes between <script> tags: it must carry no raw
+    // `<`, or a value holding `</script>` would close the tag early. Today's
+    // data has none, so this holds the escape rather than the data.
+    expect(rendered).not.toMatch(/</);
+  });
+
+  it("escapes the characters that would let a value break out of the script tag", () => {
+    // JSON.stringify leaves `<` and `/` alone, so a value holding
+    // `</script>` dropped between <script> tags would end the tag and turn
+    // the rest of the page into markup. escapeForScript closes that: `<`,
+    // `>` and `&` become their \u escapes, which JSON.parse reads back the
+    // same. Every value is build-time data today; this keeps it safe if one
+    // ever is not.
+    const hostile = JSON.stringify({ name: "</script><img src=x onerror=alert(1)>" });
+    const escaped = escapeForScript(hostile);
+
+    expect(escaped).not.toMatch(/[<>]/);
+    expect(escaped).toContain("\\u003c/script\\u003e");
+    expect(JSON.parse(escaped)).toEqual({ name: "</script><img src=x onerror=alert(1)>" });
   });
 });
 
