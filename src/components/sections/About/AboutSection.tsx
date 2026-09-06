@@ -1,4 +1,5 @@
 import { useContent } from "../../../data/content";
+import { editValue } from "../../../preview/edit";
 import { AboutImage } from "./AboutImage";
 
 /**
@@ -13,7 +14,10 @@ import { AboutImage } from "./AboutImage";
 export function AboutSection() {
   const { aboutData } = useContent();
   return (
-    <div className="grid md:grid-cols-2 gap-12 items-center print:grid-cols-1 print:gap-4">
+    <div
+      data-edit={editValue("about")}
+      className="grid md:grid-cols-2 gap-12 items-center print:grid-cols-1 print:gap-4"
+    >
       <div className="space-y-4 text-slate-400 leading-relaxed">
         {aboutData.paragraphs.map((paragraph, idx) => (
           <p key={idx}>{paragraph}</p>

@@ -6,6 +6,7 @@ import {
   STATIC_CONTENT,
   STATIC_RAW,
   useContent,
+  type RawContent,
   type SiteContent,
 } from "./content";
 import { heroData } from "./portfolioFacts";
@@ -70,5 +71,19 @@ describe("buildContent, the transform the preview runs", () => {
     expect(built.heroData.name).toBe("Edited Live");
     // Untouched documents still come through as they were.
     expect(built.thinkingQuote).toBe(STATIC_CONTENT.thinkingQuote);
+  });
+
+  it("refuses a page layout the page cannot draw, where the preview catches it", () => {
+    // A band with no shape used to throw from the render, past the preview's
+    // catch, into the root boundary — the bughunt proved it unmounted the
+    // preview. So the layout is checked here, with the transforms.
+    const layout = (sections: unknown) =>
+      buildContent({ ...STATIC_RAW, pageLayout: { sections } as RawContent["pageLayout"] });
+
+    expect(() => layout([{ body: "heroo" }])).toThrow(/heroo band/);
+    expect(() => layout([{ body: "hero" }, { body: "hero" }])).toThrow(/hero band twice/);
+    expect(() => layout([{ body: "about", title: "About" }])).toThrow(/no id/);
+    expect(() => layout("not a list")).toThrow(/no list of sections/);
+    expect(() => layout(STATIC_RAW.pageLayout.sections)).not.toThrow();
   });
 });

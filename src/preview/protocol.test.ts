@@ -70,6 +70,15 @@ describe("normalizeOrigins", () => {
     expect(normalizeOrigins("not a url")).toEqual([]);
     expect(normalizeOrigins(undefined)).toEqual([]);
   });
+
+  it("drops a value with no scheme, which would otherwise allow the origin null", () => {
+    // `new URL("localhost:3001").origin` is the string "null" — the origin a
+    // sandboxed frame, a file:// page and a data: page all report. Measured
+    // in the bughunt: a pasted host without https:// let all of those in.
+    expect(normalizeOrigins("localhost:3001")).toEqual([]);
+    expect(normalizeOrigins("editor.onrender.com:443")).toEqual([]);
+    expect(normalizeOrigins("https://editor.onrender.com")).toEqual(["https://editor.onrender.com"]);
+  });
 });
 
 describe("looksLikeContent", () => {
