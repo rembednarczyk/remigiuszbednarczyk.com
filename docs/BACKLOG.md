@@ -40,7 +40,7 @@ read as imports; a "not registered" accepted from anywhere in a document; a
 hook held by its doc comment; three literal counts under a comment promising
 nobody would have to remember them; two assertions that had never once run
 in CI because `test` precedes `build`; three plugins writing into the
-repository's `dist/` whatever the build; and five numbers in prose that the
+repository's own dist directory whatever the build; and five numbers in prose that the
 code had moved past. The two that were the editor's — a vocabulary parser
 reading half of every list, and throttle numbers held by no test — are in
 the editor's file.
@@ -55,8 +55,8 @@ builder can be handed throws inside `buildContent` and is reported.
 `tests/exportUse.test.ts` counts a same-named identifier in another file as
 a consumer — a scratch program found zero such coincidences today, so the
 mechanism is weak and there is no defect. `it.each` over a possibly empty
-list: every one asserts the length first. `/preview/` with a trailing slash
-shows the 404 view, by exact match — noted, not a defect.
+list: every one asserts the length first. The preview path with a trailing
+slash shows the 404 view, by exact match — noted, not a defect.
 
 **Accepted, not fixed, and why.** The editor skips its walk to a band for a
 second after a click in the preview, which also skips a walk the owner asks
@@ -66,7 +66,8 @@ ever bites. The editor's login throttle keys on the first `x-forwarded-for`
 entry, on the strength of Render prepending; if the platform appends, the
 per-caller limit is the attacker's to choose and only the global one holds.
 Not measured on Render yet — one request from a known address would settle
-it, and the last entry or `remoteAddress` is the change if it appends. The
+it, and the last entry or the socket's own address is the change if it
+appends. The
 editor names the site's origin twice, in its content policy and in its
 preview module, so a build pointed anywhere else is framed by nothing and
 says so nowhere; production points at the live site, and one source is a
