@@ -243,13 +243,18 @@ async function main() {
       `${verdicts.length - failures.length} are at least ${ENHANCED}x${ENHANCED}`,
   );
 
-  // A count that only ever goes up cannot report a sweep that stopped
-  // early, which is the defect the focus gate was caught by twice.
-  if (verdicts.length < EXPECTED_TARGETS) {
+  // Exact, not a floor: `<` passes whenever the count reaches the recorded
+  // number, so a sweep that stopped early in one state while the page grew a
+  // control in another nets the total and the truncation hides — the very
+  // "reported the truncated count as success" failure the comment below and
+  // the focus gate's countMustMatch both exist to stop. The sibling gate
+  // (runFocusIndicator.ts) matches in both directions; this now does too.
+  if (verdicts.length !== EXPECTED_TARGETS) {
     throw new Error(
-      `only ${verdicts.length} measurements were taken and ${EXPECTED_TARGETS} were recorded. ` +
-        `Either the sweep stopped early or the page lost controls; both are worth knowing, ` +
-        `and neither shows up as a failure below.`,
+      `${verdicts.length} measurements were taken and ${EXPECTED_TARGETS} were recorded. ` +
+        (verdicts.length < EXPECTED_TARGETS
+          ? `The sweep stopped early or the page lost controls; both are worth knowing, and neither shows up as a failure below.`
+          : `The page has grown controls. If that is wanted, update EXPECTED_TARGETS in scripts/runTargetSize.ts.`),
     );
   }
 

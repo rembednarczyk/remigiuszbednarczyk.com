@@ -3,6 +3,8 @@ import { Mail, Download } from "lucide-react";
 import { LinkedinIcon, GithubIcon } from "../ui/BrandIcon";
 import { ContactModal } from "../ui/ContactModal";
 import { Reveal } from "../ui/Reveal";
+import { numbered } from "../../lib/pageLayout";
+import pageLayout from "../../content/pageLayout.json" with { type: "json" };
 
 /**
  * The `contact` band, which renders its own element.
@@ -12,10 +14,21 @@ import { Reveal } from "../ui/Reveal";
  * the page nobody asked for. Whether it appears, and where, is
  * src/content/pageLayout.json.
  *
+ * Its teaser wears the number after the numbered run — the informal next
+ * step past the ten. That number is derived from the layout, not typed:
+ * a hand-typed `11.` is exactly the drift `numbered()` exists to end, and
+ * the bughunt found it here after the rest of the page had been freed of it.
+ * Add or remove a titled band and this follows, the same way the run does.
+ *
  * src/components/PageBodies.tsx is what maps the name to this component.
  */
 export function ContactSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const numberedCount = numbered(pageLayout.sections).filter(
+    ({ number }) => number !== "",
+  ).length;
+  const nextNumber = String(numberedCount + 1).padStart(2, "0");
 
   return (
     <section
@@ -24,7 +37,7 @@ export function ContactSection() {
     >
       <Reveal className="w-full">
         <p className="text-cyan-400 font-mono mb-4 text-lg">
-          11. What&apos;s next?
+          {nextNumber}. What&apos;s next?
         </p>
         <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
           Get In Touch
