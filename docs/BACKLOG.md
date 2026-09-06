@@ -6,6 +6,72 @@ decided against — not when it is forgotten.
 
 ---
 
+## The second adversarial bughunt — the areas the first did not reach
+
+Run on 6 September 2026, the same way as the first and over the ground it
+left: five read-only passes, none touching the repositories, each proving or
+disproving and rejecting its own false positives. The first round took the
+preview seam, the editor's app and server surface, the editor's form, and
+the tests; this one took the site's real render path and its data and CV, the
+build plugins and the measurement scripts, the site's hooks and routing and
+consent and the always-on UI, the editor's pure library functions, and the
+editor's server internals and auth crypto. The editor's half is recorded in
+its own docs/BACKLOG.md.
+
+**Two that would have been felt.** A stray `%` in the address hash — the kind
+of thing a shared link or a crawler carries — made the decode throw in the
+page's mount effect, and the throw reached the boundary around the whole app
+whose only way out is a reload of the same address: a loop that replaced the
+page with its fallback for good. And the editor's server computed its route
+with a parser that rejects targets Node's own HTTP parser accepts — a double
+slash, a backslash — so one such request threw, uncaught, in the listener and
+the process exited: an unauthenticated caller could keep it down by
+re-sending. Both were measured, not read: the hash crash in a jsdom render,
+the server crash against the running bundle, twice.
+
+**Three quieter ones.** The scroll-to-top button, mounted only once the
+consent banner is answered, decided its visibility from the next scroll
+alone, so it was absent exactly when a reader who had scrolled deep accepted
+the banner — it reads the scroll position at the first render now. The
+contact teaser wore a hand-typed number, the one section number the rest of
+the page had been freed of, drifting the moment a band was added or removed.
+A project card that mixed a labelled link with a bare one dropped the label
+it had, deciding all-or-nothing where it should decide per link. And the
+target-size gate held its count with a floor where the focus gate had learnt
+to hold it exact — a truncated sweep could pass by growing elsewhere.
+
+**Raised and kept.** The hero metric tiles carry a press cursor and press
+feedback with no handler behind them — the false affordance the portrait
+image documents removing. The owner keeps it as intentional decoration on
+the tiles; it is written here so the next reader knows it was seen and
+decided, not missed.
+
+**What the passes rejected, so a third round need not re-hunt it.** The
+content-date ISO slicing (correct against the committer's own day, measured
+off the built sitemap); the sitemap and JSON-LD generation (well-formed, no
+regex carryover); the comment-stripper's still-open cases (no regex literal
+or nested template in the scanned tree to trip them); the print-QR card and
+the print/motion/reveal/lighthouse verdict functions (each guards its own
+blind spot); the plugins' bundle ordering. In the runtime UI: the auto-print
+latch, the scroll-lock nesting, the modal focus return, the consent state
+machine and the idempotent tag load, the particle canvas cleanup and
+reduced-motion. In the editor's libs: the path operations' immutability and
+special-character round-trip, the fold renumber arithmetic (all 36 move
+pairs on a six-entry list, against a splice ground truth), the history
+coalescing, the diff aliasing, the search ranking, the line boundary. In the
+server: the HMAC session (no length-extension, key genuinely changes with
+the password, constant-time compare, expiry boundaries), the CSP on every
+error path, the traversal defences, the throttle counters (the `*`-caller
+amplifier disproven by measurement), the body cap.
+
+**What it teaches, for Part 0.** The two crashes were both a parser or a
+decoder handed input from outside — a URL hash, a request target — with no
+guard, in a place a throw does not stay local: a mount effect under the app
+boundary, a request listener with no catch. The lesson the checks lane taught
+last round has a runtime twin: an input the code does not control needs a
+guard at the point it enters, and the proof is the malformed input driven
+through the real thing, not a reading that it looks handled.
+
 ## The first adversarial bughunt — what it found, what it rejected, what was left
 
 Run on 6 September 2026 the way *Ways of Working* Part 5 describes: four
