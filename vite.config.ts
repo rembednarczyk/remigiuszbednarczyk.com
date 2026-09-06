@@ -1,8 +1,8 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
-import path from "path";
-import { defineConfig, type Plugin } from "vite";
+import path from "node:path";
+import { defineConfig, type Plugin, type ResolvedConfig } from "vite";
 import { lastContentChange, resolveContentDate } from "./scripts/contentDate";
 import { PRINT_QR_CARD_FILE, printQrCard } from "./scripts/printQrCard";
 import { countLastmod, stampSitemap } from "./scripts/sitemap";
@@ -19,14 +19,43 @@ import { VOCABULARY } from "./src/data/vocabulary";
 const CONTENT_UPDATED = resolveContentDate(lastContentChange(__dirname), new Date());
 const CONTENT_UPDATED_DAY = CONTENT_UPDATED.toISOString().slice(0, 10);
 
+/**
+ * Where the site's own build writes, for the plugins that write beside the
+ * page — or null when this is not the site's build.
+ *
+ * Three plugins wrote into the repository's `dist/` by name, whatever the
+ * build was. Storybook builds through this same config, and the tests that
+ * build (`tests/sourceMaps.test.ts`) build into a temporary directory with
+ * `--outDir`; the bughunt measured `dist/sitemap.xml`, `cv-qr-code.png` and
+ * `vocabulary.json` freshly stamped by a test run under an `index.html`
+ * from the night before, and two tests comparing against that mixed build.
+ * The directory is the resolved config's, and the build is the site's when
+ * its input is Vite's default — the page's index.html — rather than the
+ * iframe Storybook names.
+ */
+function siteBuild(): { configResolved: (config: ResolvedConfig) => void; dir: () => string | null } {
+  let dir: string | null = null;
+  return {
+    configResolved(config) {
+      const input = config.build.rollupOptions.input;
+      dir = input === undefined ? path.resolve(config.root, config.build.outDir) : null;
+    },
+    dir: () => dir,
+  };
+}
+
 /** Dates the sitemap from the content's last change, so it cannot fall behind
  *  the content — and does not run ahead of it on a code-only deploy. */
 function stampSitemapPlugin(): Plugin {
+  const built = siteBuild();
   return {
     name: "stamp-sitemap",
     apply: "build",
+    configResolved: built.configResolved,
     closeBundle() {
-      const file = path.resolve(__dirname, "dist/sitemap.xml");
+      const dist = built.dir();
+      if (dist === null) return;
+      const file = path.resolve(dist, "sitemap.xml");
       if (!fs.existsSync(file)) return;
 
       const xml = fs.readFileSync(file, "utf8");
@@ -60,14 +89,16 @@ function stampSitemapPlugin(): Plugin {
  * broken again. It came back once; it should not go quiet twice.
  */
 function printQrCardPlugin(): Plugin {
+  const built = siteBuild();
   return {
     name: "draw-print-qr-card",
     apply: "build",
+    configResolved: built.configResolved,
     closeBundle() {
       // Storybook builds through this same config and has no dist/ of the
-      // site's shape to write into.
-      const dist = path.resolve(__dirname, "dist");
-      if (!fs.existsSync(path.resolve(dist, "index.html"))) return;
+      // site's shape to write into; siteBuild says so.
+      const dist = built.dir();
+      if (dist === null) return;
 
       fs.writeFileSync(path.resolve(dist, PRINT_QR_CARD_FILE), printQrCard());
     },
@@ -94,14 +125,16 @@ function printQrCardPlugin(): Plugin {
 export const VOCABULARY_FILE = "vocabulary.json";
 
 function vocabularyPlugin(): Plugin {
+  const built = siteBuild();
   return {
     name: "serve-vocabulary",
     apply: "build",
+    configResolved: built.configResolved,
     closeBundle() {
       // Storybook builds through this same config and has no dist/ of the
-      // site's shape to write into.
-      const dist = path.resolve(__dirname, "dist");
-      if (!fs.existsSync(path.resolve(dist, "index.html"))) return;
+      // site's shape to write into; siteBuild says so.
+      const dist = built.dir();
+      if (dist === null) return;
 
       fs.writeFileSync(
         path.resolve(dist, VOCABULARY_FILE),

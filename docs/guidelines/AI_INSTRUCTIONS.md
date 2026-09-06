@@ -109,7 +109,7 @@ STEP 7: FINAL CHECK
 
 When adding a feature:
 
-1. Static facts -> the words into `src/content/*.json`, the shape into `src/data/portfolioFacts.ts`, which carries no JSX so the build can read it (`llm.txt`, the JSON-LD and the sitemap are generated from it). A sentence a reader sees belongs in the JSON; a computation, a union of names, or anything the type system has to check belongs in the module that assembles it. Content has to say something: `tests/contentShape.test.ts` refuses an empty or untrimmed string, an empty list and a non-positive number anywhere in the tree
+1. Static facts -> the words into `src/content/*.json`, the shape into `src/data/portfolioFacts.ts`, which carries no JSX so the build can read it (the JSON-LD and the sitemap are generated from it; `public/llm.txt` is written by hand and held to it by `tests/botLayer.test.ts`). A sentence a reader sees belongs in the JSON; a computation, a union of names, or anything the type system has to check belongs in the module that assembles it. Content has to say something: `tests/contentShape.test.ts` refuses an empty or untrimmed string, an empty list and a non-positive number anywhere in the tree
 2. Reusable logic -> `hooks/`
 3. Reusable UI -> `components/ui/`
 4. Complex component -> split into smaller parts

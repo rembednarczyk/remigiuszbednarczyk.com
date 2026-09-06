@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import pageLayout from "../src/content/pageLayout.json" with { type: "json" };
+import { PAGE_BODY_NAMES } from "../src/data/vocabulary";
 
 /**
  * A section component says which band it is, and is held to it.
@@ -79,8 +80,12 @@ describe("the section components", () => {
     // Everything below reads this list. Parsed out of the registry rather
     // than typed here, so a fourteenth band is covered without anyone
     // remembering to add it — and a parse that quietly found nothing would
-    // make every check below pass over an empty list.
-    expect(bands).toHaveLength(13);
+    // make every check below pass over an empty list. The count is the
+    // vocabulary's, not a literal: the bughunt found `13` written here
+    // under a comment promising the fourteenth would need no one to
+    // remember, which is what a literal is for.
+    expect(PAGE_BODY_NAMES.length).toBeGreaterThan(10);
+    expect([...names].sort()).toEqual([...PAGE_BODY_NAMES].sort());
     expect(bands.every(({ file }) => file.endsWith("Section.tsx"))).toBe(true);
     expect(names).toEqual([...new Set(names)]);
   });
@@ -126,8 +131,13 @@ describe("what each comment claims about its band", () => {
   );
 
   it("finds both kinds, so neither case below is vacuous", () => {
-    expect(numbered.size).toBe(10);
-    expect(bands.length - numbered.size).toBe(3);
+    // Both kinds present is the guard; how many of each is the layout's
+    // to decide. Written as `10` and `3`, a fourteenth band turned this
+    // red with nothing wrong — the count had to be edited by hand, which
+    // the comment above the registry promised nobody would have to.
+    expect(numbered.size).toBeGreaterThan(0);
+    expect(bands.length - numbered.size).toBeGreaterThan(0);
+    expect([...numbered].every((band) => names.includes(band))).toBe(true);
   });
 
   it("matches whether the layout gives it a heading", () => {

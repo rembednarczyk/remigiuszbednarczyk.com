@@ -174,7 +174,7 @@ describe("the CI install step", () => {
 });
 
 const SOURCE_ROOTS = ["src", ".storybook", "tests", "scripts"];
-const SOURCE_EXTENSIONS = [".ts", ".tsx"];
+const SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".mjs"];
 
 function listSourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -182,6 +182,20 @@ function listSourceFiles(dir: string): string[] {
     if (statSync(full).isDirectory()) return listSourceFiles(full);
     return SOURCE_EXTENSIONS.some((ext) => entry.endsWith(ext)) ? [full] : [];
   });
+}
+
+/**
+ * The tool configs at the root — `eslint.config.js`, `vite.config.ts`,
+ * `vitest.config.ts` — import packages too, and the one this check was
+ * written for lives in the first of them. They were never read: the roots
+ * above are directories, and the extensions were TypeScript's. The bughunt
+ * put `@eslint/js` back into the state that motivated the check, undeclared
+ * and resolving through `eslint`, and lint, build and this test stayed green.
+ */
+function listRootConfigs(): string[] {
+  return readdirSync(root)
+    .filter((entry) => /\.config\.(ts|js|mjs)$/.test(entry))
+    .map((entry) => join(root, entry));
 }
 
 /** "motion/react" belongs to "motion"; "@storybook/react-vite" is its own name. */
@@ -213,13 +227,17 @@ describe("every package the source imports", () => {
   it("is declared in package.json", () => {
     const undeclaredBy = new Map<string, string[]>();
 
-    for (const dir of SOURCE_ROOTS) {
-      for (const file of listSourceFiles(resolve(root, dir))) {
-        for (const name of importedPackages(file)) {
-          if (name in declared) continue;
-          const where = relative(root, file).replace(/\\/g, "/");
-          undeclaredBy.set(name, [...(undeclaredBy.get(name) ?? []), where]);
-        }
+    const files = [
+      ...SOURCE_ROOTS.flatMap((dir) => listSourceFiles(resolve(root, dir))),
+      ...listRootConfigs(),
+    ];
+    expect(files.some((file) => file.endsWith("eslint.config.js"))).toBe(true);
+
+    for (const file of files) {
+      for (const name of importedPackages(file)) {
+        if (name in declared) continue;
+        const where = relative(root, file).replace(/\\/g, "/");
+        undeclaredBy.set(name, [...(undeclaredBy.get(name) ?? []), where]);
       }
     }
 

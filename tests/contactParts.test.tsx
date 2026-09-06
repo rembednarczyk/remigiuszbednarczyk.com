@@ -131,9 +131,17 @@ describe("what ships to a visitor", () => {
     // Skipped rather than failed without a build: `npm test` runs before
     // `npm run build` in check:quality, and a check that demands the build
     // would fail for the wrong reason on a clean clone. The browser gates
-    // are where a built artifact is a precondition.
+    // are where a built artifact is a precondition — and so, since the
+    // bughunt found this had never once run in CI, is `test:built`, which
+    // check:quality runs after the build with EXPECT_BUILD set: there a
+    // missing bundle is a failure, not a pass.
     const shipped = bundle();
-    if (shipped === null) return;
+    if (shipped === null) {
+      if (process.env["EXPECT_BUILD"] !== undefined) {
+        throw new Error("test:built ran and there is no dist/assets to read the bundle from");
+      }
+      return;
+    }
 
     expect(shipped).not.toContain(cvData.header.email.display.join(""));
   });
