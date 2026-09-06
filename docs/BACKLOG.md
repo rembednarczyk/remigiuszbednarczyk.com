@@ -6,6 +6,44 @@ decided against — not when it is forgotten.
 
 ---
 
+## The fourth pass — a security review of both surfaces
+
+Run on 6 September 2026 as a security-focused pass, two lanes: this site's
+client surface, and the editor's write path (recorded in the editor's own
+docs/BACKLOG.md). Neither found an exploitable vulnerability. The bundle
+carries no secret, there is no raw-HTML escape hatch or other injection
+sink anywhere in the source, React 19 neutralises a `javascript:` URL (proven
+against the real renderer), the preview seam pins its origin and only ever
+renders received content as React text and props, and the analytics tag
+reaches the network only after consent on every path. Two low-severity site
+items came out of it, both fixed.
+
+**The address in the sourcemap.** The contact address is fragmented so a
+harvester reading the page's text nodes cannot join it — but ContactParts'
+own comment spelled the assembled address out in prose, and `sourcemap:
+true` ships that comment in a `.js.map` served beside the bundle, a plain URL
+a harvester can fetch. Measured: the built `.js.map` carried the whole
+address once, from that comment; the `.js` did not. The two rationales never
+met — the sourcemap was justified on "the source is already public in the
+repo", while the fragmentation's threat model is a harvester fetching
+deployed URLs, which the map is one of. The comment describes the shape
+without writing the address now, and the shipping test scans the `.js.map`
+as well as the `.js`.
+
+**The JSON-LD escape.** `injectPersonSchema` dropped `JSON.stringify` output
+straight between `<script>` tags, and `JSON.stringify` escapes neither `<`
+nor `/`, so a value holding `</script>` would close the tag. Every value is
+build-time data from portfolioFacts today, so nothing reaches it — but the
+escape (`<`, `>`, `&` to their `\u` forms) closes the class rather than
+trusting that.
+
+**What it teaches.** Both site findings are the same shape as the crashes
+the earlier rounds found: an output channel — a sourcemap served to the
+public, a `<script>` body — carrying data whose escaping or exposure nobody
+had checked at the point it leaves. The proof was the built artifact grepped
+and the hostile value driven through the escaper, not a reading that it
+looked contained.
+
 ## The second adversarial bughunt — the areas the first did not reach
 
 Run on 6 September 2026, the same way as the first and over the ground it
