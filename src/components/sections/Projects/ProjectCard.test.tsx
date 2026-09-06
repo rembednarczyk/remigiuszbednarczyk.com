@@ -45,6 +45,25 @@ describe("a card's links", () => {
 
     expect(screen.getByRole("link", { name: "Link to Sii TestingLab Jury" })).toHaveTextContent("g");
   });
+
+  it("keeps the labels when a card mixes a labelled link with a bare one", () => {
+    // The decision used to be all-or-nothing: one unlabelled link sent every
+    // link — the labelled ones too — to the icon row, and the labels it had
+    // vanished. Each link is decided on its own now: the labelled one is an
+    // output that names itself, the bare one stays a glyph.
+    render(
+      <ProjectCard
+        project={project({
+          links: [link("Report: AI Edition"), { url: "https://x.test/repo", icon: glyph("g") }],
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("link", { name: /Report: AI Edition — Sii TestingLab Jury/ }),
+    ).toHaveTextContent("Report: AI Edition");
+    expect(screen.getByRole("link", { name: "Link to Sii TestingLab Jury" })).toHaveTextContent("g");
+  });
 });
 
 describe("a featured programme", () => {
