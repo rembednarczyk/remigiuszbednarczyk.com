@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Portfolio } from "../App";
 import { buildContent, ContentProvider, STATIC_CONTENT, type SiteContent } from "../data/content";
 import { cardFor, editOf, pickAt } from "./edit";
+import { PreviewBoundary } from "./PreviewBoundary";
 import {
   allowedEditorOrigins,
   type Box,
@@ -43,6 +44,32 @@ export function PreviewApp() {
   // null for none. State rather than a ref: the page redraws on every edit,
   // and the outline has to land on the card that draws the entry after each.
   const [editing, setEditing] = useState<string | null>(null);
+  // The last content that drew without throwing, to go back to when one does
+  // not; and which mount of the boundary is on the page, bumped to give the
+  // next edit a fresh one. `failed` is set by the boundary in the commit
+  // that showed nothing, before this component's own effects run in that
+  // same commit, so the effect below can tell a drawn page from a caught one.
+  const lastGood = useRef<SiteContent>(STATIC_CONTENT);
+  const failed = useRef(false);
+  const [attempt, setAttempt] = useState(0);
+
+  /** Tell the editor the content could not become a page, in its words. */
+  function report(error: unknown): void {
+    const target = editor.current;
+    if (target === null) return;
+    target.window.postMessage(
+      { type: "preview:error", message: error instanceof Error ? error.message : String(error) },
+      target.origin,
+    );
+  }
+
+  /** A render threw: say so, go back to the last page that drew, start over. */
+  function recover(error: Error): void {
+    failed.current = true;
+    report(error);
+    setContent(lastGood.current);
+    setAttempt((count) => count + 1);
+  }
 
   useEffect(() => {
     function onMessage(event: MessageEvent) {
@@ -91,16 +118,7 @@ export function PreviewApp() {
       try {
         setContent(buildContent(event.data.content));
       } catch (error) {
-        const target = editor.current;
-        if (target !== null) {
-          target.window.postMessage(
-            {
-              type: "preview:error",
-              message: error instanceof Error ? error.message : String(error),
-            },
-            target.origin,
-          );
-        }
+        report(error);
       }
     }
 
@@ -116,8 +134,15 @@ export function PreviewApp() {
     };
   }, []);
 
-  // After the page has drawn the new content, hand the editor the geometry.
+  // After the page has drawn the new content, hand the editor the geometry —
+  // and remember the content as one that draws. A commit in which the
+  // boundary caught a throw drew nothing, so it is neither.
   useLayoutEffect(() => {
+    if (failed.current) {
+      failed.current = false;
+      return;
+    }
+    lastGood.current = content;
     postGeometry(editor.current, content);
   }, [content]);
 
@@ -184,7 +209,9 @@ export function PreviewApp() {
 
   return (
     <ContentProvider value={content}>
-      <Portfolio />
+      <PreviewBoundary key={attempt} onFail={recover}>
+        <Portfolio />
+      </PreviewBoundary>
     </ContentProvider>
   );
 }

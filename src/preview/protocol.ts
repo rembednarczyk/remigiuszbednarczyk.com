@@ -37,7 +37,12 @@ export function normalizeOrigins(raw: string | undefined): string[] {
     .filter((value) => value.length > 0)
     .flatMap((value) => {
       try {
-        return [new URL(value).origin];
+        const url = new URL(value);
+        // A value with no scheme — `editor.onrender.com:443`, `localhost:3001`
+        // — parses, with the host taken as the scheme, to the origin "null":
+        // which is exactly the origin of a sandboxed frame, a file:// page
+        // and a data: page. The bughunt measured it. Only a web origin is one.
+        return url.protocol === "https:" || url.protocol === "http:" ? [url.origin] : [];
       } catch {
         return [];
       }

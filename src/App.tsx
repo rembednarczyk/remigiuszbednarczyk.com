@@ -89,23 +89,22 @@ export function Portfolio() {
           itemType="https://schema.org/Person"
           className="relative z-10 max-w-6xl mx-auto px-6 pt-24 pb-8"
         >
-          {numbered(pageLayout.sections).map(({ section, number }) => {
+          {numbered(pageLayout.sections).map(({ section, number }, index) => {
             const Body = pageBodyOf(section.body);
+            // Keyed by place as well as name: a layout being edited can name
+            // one band twice for a moment, and two children with one key is
+            // an error React recovers from by guessing.
+            const key = `${String(index)}:${section.body}`;
 
             // A band with a heading is one of the numbered run and is
             // wrapped here; the hero, the quote and the contact form
             // render their own element, as they always did.
             return "title" in section ? (
-              <PageSection
-                key={section.body}
-                id={section.id}
-                number={number}
-                title={section.title}
-              >
+              <PageSection key={key} id={section.id} number={number} title={section.title}>
                 <Body />
               </PageSection>
             ) : (
-              <Body key={section.body} />
+              <Body key={key} />
             );
           })}
         </main>

@@ -19,7 +19,7 @@ function sendContent(
   options: { origin?: string; source?: Window; raw?: Partial<RawContent> } = {},
 ): void {
   const { origin = "http://localhost:3001", source, raw = {} } = options;
-  const content = { ...STATIC_RAW, ...raw, hero: { ...STATIC_RAW.hero, name } };
+  const content = { ...STATIC_RAW, ...raw, hero: { ...STATIC_RAW.hero, ...raw.hero, name } };
 
   const init: MessageEventInit = { data: { type: "preview:content", content }, origin };
   if (source !== undefined) init.source = source;
@@ -66,7 +66,7 @@ const MAPPED: [keyof RawContent, string][] = [
   ["keyProjects", "projects"],
   ["experience", "jobs"],
   ["skills", "categories"],
-  ["certifications", "groups"],
+  ["certificationsSummary", "groups"],
   ["recognition", "awards"],
   ["achievements", "items"],
   ["community", "items"],
@@ -192,6 +192,26 @@ describe("a click in the preview", () => {
 
     expect(cardFor(document, editValue("hero"))).not.toBeNull();
     expect(cardFor(document, editValue("thinking"))).not.toBeNull();
+    expect(cardFor(document, editValue("about"))).not.toBeNull();
+  });
+
+  it("names the certification cards by the file the page draws, not the print record", () => {
+    // certifications.json and certificationsSummary.json both hold three
+    // groups today, so a count alone cannot tell them apart — the bughunt
+    // found the cards naming the print file behind exactly that coincidence.
+    // Shortening the summary to one group is what makes the count honest.
+    renderPreview();
+    const [only] = STATIC_RAW.certificationsSummary.groups;
+    if (only === undefined) throw new Error("the summary has no groups to draw");
+    sendContent(heroData.name, {
+      raw: { certificationsSummary: { ...STATIC_RAW.certificationsSummary, groups: [only] } },
+    });
+
+    const cards = [...document.querySelectorAll(`#certifications [${EDIT_ATTRIBUTE}]`)];
+    expect(cards.map((card) => card.getAttribute(EDIT_ATTRIBUTE))).toEqual([
+      entryEdit("certificationsSummary", "groups", 0),
+    ]);
+    expect(STATIC_RAW.certifications.groups.length).toBeGreaterThan(1);
   });
 
   it("names the featured project by its place in the file, not on the page", () => {
@@ -293,5 +313,93 @@ describe("a click in the preview", () => {
     sendHighlight("recognition.json", "awards[1]", "https://evil.example");
 
     expect(document.querySelector("[data-editing]")).toBeNull();
+  });
+});
+
+/** What the editor was told went wrong, in order. */
+function errors(postMessage: ReturnType<typeof vi.fn>): string[] {
+  return postMessage.mock.calls
+    .map((call) => call[0] as { type?: string; message?: string })
+    .filter((message) => message.type === "preview:error")
+    .map((message) => message.message ?? "");
+}
+
+describe("an edit the page cannot draw", () => {
+  it("is refused with the band named, and the page stays as it was", () => {
+    // The layout used to pass through untouched, so a band name the page has
+    // no shape for threw from the render, past the catch, into the root
+    // boundary — which unmounted the preview and its listener. Proven in the
+    // bughunt with this exact typo.
+    renderPreview();
+    const postMessage = connectEditor();
+    sendContent("Kept");
+
+    sendContent("Typo", { raw: { pageLayout: { sections: [{ body: "heroo" }] } } as Partial<RawContent> });
+
+    expect(errors(postMessage)).toEqual([expect.stringContaining("heroo")]);
+    expect(screen.getAllByText("Kept").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Typo")).not.toBeInTheDocument();
+  });
+
+  it("refuses a band named twice, and a heading with no anchor", () => {
+    renderPreview();
+    const postMessage = connectEditor();
+    const [hero, ...rest] = STATIC_RAW.pageLayout.sections;
+
+    sendContent("Twice", {
+      raw: { pageLayout: { sections: [hero, hero, ...rest] } } as Partial<RawContent>,
+    });
+    sendContent("Unreachable", {
+      raw: { pageLayout: { sections: [{ body: "about", title: "About" }] } } as Partial<RawContent>,
+    });
+
+    expect(errors(postMessage)).toEqual([
+      expect.stringContaining("twice"),
+      expect.stringContaining("no id"),
+    ]);
+  });
+
+  it("reports a value the page trips over while drawing, keeps the last page, and draws the next", () => {
+    // Not every bad value is a name buildContent can check: a null where a
+    // list should be passes the transform and throws in a component. The
+    // boundary inside the preview catches it, says so, and goes back.
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      renderPreview();
+      const postMessage = connectEditor();
+      sendContent("Kept");
+
+      sendContent("Broken", { raw: { hero: { metrics: null } } as unknown as Partial<RawContent> });
+
+      expect(errors(postMessage)).toHaveLength(1);
+      expect(screen.getAllByText("Kept").length).toBeGreaterThan(0);
+
+      expect(screen.queryByText("Broken")).not.toBeInTheDocument();
+
+      sendContent("After");
+      expect(screen.getAllByText("After").length).toBeGreaterThan(0);
+      expect(screen.queryByText("Kept")).not.toBeInTheDocument();
+    } finally {
+      quiet.mockRestore();
+    }
+  });
+});
+
+describe("the preview as a visit", () => {
+  it("asks for no consent and loads no tag, even for an owner who accepted on the site", () => {
+    // The preview is the site at its own origin, so the owner's stored yes
+    // applied to it: the bughunt measured the tag loading and a page view
+    // for /preview on every editing session.
+    window.history.pushState({}, "", "/preview");
+    localStorage.setItem("cookie-consent", "granted");
+    try {
+      renderPreview();
+
+      expect(document.getElementById("ga-tag")).toBeNull();
+      expect(screen.queryByRole("button", { name: /accept/i })).not.toBeInTheDocument();
+    } finally {
+      localStorage.removeItem("cookie-consent");
+      window.history.pushState({}, "", "/");
+    }
   });
 });

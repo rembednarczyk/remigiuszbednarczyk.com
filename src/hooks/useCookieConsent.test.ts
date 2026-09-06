@@ -77,6 +77,20 @@ describe("useCookieConsent", () => {
     expect(result.current.consent).toBe("granted");
   });
 
+  it("starts denied in the editor's preview, whatever the owner chose on the site", () => {
+    // The preview is this page at its own origin; a mirror of an unsaved edit
+    // is not a visit, so nothing is asked and no tag is loaded there.
+    localStorage.setItem(CONSENT_STORAGE_KEY, "granted");
+    window.history.pushState({}, "", "/preview");
+    try {
+      const { result } = renderHook(() => useCookieConsent());
+      expect(result.current.consent).toBe("denied");
+      expect(document.getElementById(TAG_ELEMENT_ID)).toBeNull();
+    } finally {
+      window.history.pushState({}, "", "/");
+    }
+  });
+
   it("grants analytics storage and remembers it", () => {
     const { result } = renderHook(() => useCookieConsent());
     act(() => result.current.accept());
