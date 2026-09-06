@@ -104,7 +104,13 @@ function FeaturedCard({ project, edit }: { project: KeyProject; edit?: string | 
 export const ProjectCard: React.FC<{ project: KeyProject; edit?: string }> = ({ project, edit }) => {
   if (project.featured) return <FeaturedCard project={project} edit={edit} />;
 
-  const labelled = (project.links ?? []).every((link) => link.label !== undefined);
+  // Decided per link, not all-or-nothing: a project that mixes a labelled
+  // link with a bare one used to send every link — the labelled ones too —
+  // to the icon row, dropping the labels it had. A link with a label is an
+  // output below; one without keeps the compact icon row above.
+  const links = project.links ?? [];
+  const iconLinks = links.filter((link) => link.label === undefined);
+  const outputLinks = links.filter((link) => link.label !== undefined);
 
   return (
     <article data-edit={edit} className={CARD}>
@@ -113,9 +119,9 @@ export const ProjectCard: React.FC<{ project: KeyProject; edit?: string }> = ({ 
         {/* Links without a label keep the old icon row: the icons keep their
             size and the padding grows around them, so the tap area reaches
             44x44 (WCAG 2.2 SC 2.5.5). Labelled links render as outputs below. */}
-        {!labelled && (
+        {iconLinks.length > 0 && (
           <div className="flex">
-            {project.links?.map((link, lIdx) => (
+            {iconLinks.map((link, lIdx) => (
               <a
                 key={lIdx}
                 href={link.url}
@@ -136,9 +142,9 @@ export const ProjectCard: React.FC<{ project: KeyProject; edit?: string }> = ({ 
       </h3>
       <p className="text-slate-400 text-base leading-relaxed mb-6 flex-grow">{project.desc}</p>
 
-      {labelled && project.links && project.links.length > 0 && (
+      {outputLinks.length > 0 && (
         <ul className="flex flex-col mb-6 border-t border-white/10 pt-4">
-          {project.links.map((link, lIdx) => (
+          {outputLinks.map((link, lIdx) => (
             <li key={lIdx}>
               <OutputLink link={link} project={project.title} />
             </li>

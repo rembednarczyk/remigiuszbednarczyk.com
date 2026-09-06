@@ -14,7 +14,18 @@ import { useEffect } from "react";
  */
 export function useHashTarget(): void {
   useEffect(() => {
-    const id = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    // A stray or invalid `%` in the hash makes decodeURIComponent throw
+    // (`#%`, `#100%`) — and this runs in the page's mount effect, so the
+    // throw would reach the boundary that wraps the whole app and replace
+    // the page with its fallback, whose only way out is a reload of the
+    // same address: a loop. A hash that will not decode names nothing here,
+    // which is the case already handled by staying put.
+    let id: string;
+    try {
+      id = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    } catch {
+      return;
+    }
     if (!id) return;
 
     // A hash naming nothing on this page is left alone rather than guessed
