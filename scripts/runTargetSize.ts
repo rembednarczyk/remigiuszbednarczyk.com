@@ -286,7 +286,7 @@ async function main() {
  * focus gate was floored at "more than 20" while the page had 28, so a
  * truncation to 21 reported success. Measured, per the widths above.
  */
-const EXPECTED_TARGETS = 241;
+const EXPECTED_TARGETS = 250;
 
 main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : error);
