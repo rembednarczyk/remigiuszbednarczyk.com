@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import { PAGE_BODY_NAMES } from "./vocabulary";
 import {
   achievementsData,
   aboutData,
@@ -122,8 +123,45 @@ export function buildContent(raw: RawContent): SiteContent {
     ...buildFacts(raw),
     ...buildPresentation(raw),
     yearsOfExperience,
-    pageLayout: raw.pageLayout,
+    pageLayout: checkedLayout(raw.pageLayout),
   };
+}
+
+/**
+ * The page layout, refused here rather than in the render.
+ *
+ * `buildFacts` and `buildPresentation` throw on a name the page cannot draw
+ * — an icon, a tone — and the preview catches that throw and reports it to
+ * the editor. The layout used to pass through untouched, so a band name the
+ * page has no shape for threw from `pageBodyOf` in the render instead:
+ * outside that catch, into the root error boundary, which unmounted the
+ * preview and its listener, so the typo could not be corrected without a
+ * reload. The bughunt proved it with `{ body: "heroo" }`. Now every band is
+ * checked where the throw is caught, and the message says which.
+ */
+function checkedLayout(layout: RawContent["pageLayout"]): RawContent["pageLayout"] {
+  const sections: unknown = (layout as { sections?: unknown }).sections;
+  if (!Array.isArray(sections)) throw new Error("the page layout has no list of sections");
+
+  const seen = new Set<string>();
+  sections.forEach((section: unknown, index) => {
+    const body = (section as { body?: unknown } | null)?.body;
+    if (typeof body !== "string" || !(PAGE_BODY_NAMES as readonly string[]).includes(body)) {
+      throw new Error(
+        `section ${String(index + 1)} of the page layout asks for a ${String(body)} band, ` +
+          `and the ones that exist are ${PAGE_BODY_NAMES.join(", ")}`,
+      );
+    }
+    if (seen.has(body)) throw new Error(`the page layout names the ${body} band twice`);
+    seen.add(body);
+
+    const titled = section as { title?: unknown; id?: unknown };
+    if ("title" in titled && typeof titled.id !== "string") {
+      throw new Error(`the ${body} band has a heading but no id for the navigation to reach`);
+    }
+  });
+
+  return layout;
 }
 
 // The default is the build's own content, so a section rendered with no

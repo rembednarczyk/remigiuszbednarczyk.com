@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { loadAnalyticsTag } from "../lib/analyticsTag";
+import { PREVIEW_PATH } from "../preview/protocol";
+
+/** Whether this document is the editor's preview rather than a visit. */
+function inPreview(): boolean {
+  return typeof window !== "undefined" && window.location.pathname === PREVIEW_PATH;
+}
 
 export type ConsentChoice = "granted" | "denied";
 export type ConsentState = ConsentChoice | "unset";
@@ -26,7 +32,15 @@ export function readStoredConsent(): ConsentState {
  * loads, so nothing is stored until this grants it.
  */
 export function useCookieConsent() {
-  const [consent, setConsent] = useState<ConsentState>(readStoredConsent);
+  // The editor's live preview is this page at its own origin, so an owner
+  // who accepted cookies on their site would load the tag and send a page
+  // view for /preview on every editing session, and one who had not would
+  // get the banner inside the frame. The bughunt measured the first. A
+  // mirror of an unsaved edit is not a visit: nothing is asked and nothing
+  // is sent there.
+  const [consent, setConsent] = useState<ConsentState>(() =>
+    inPreview() ? "denied" : readStoredConsent(),
+  );
 
   /**
    * The tag is fetched here rather than from index.html, so that a visitor
