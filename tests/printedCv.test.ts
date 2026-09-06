@@ -6,6 +6,7 @@ import {
   layoutDrift,
   readsAsACv,
   sheetsWhoseInkIsNotPlausible,
+  titleMissingProvenance,
   type PrintedPage,
 } from "../scripts/printedCv";
 
@@ -128,6 +129,27 @@ describe("whether the extraction found anything at all", () => {
 
   it("refuses a document that is somebody else's", () => {
     expect(readsAsACv([sheet(1, 0.1, ["Lorem ipsum"])], "Bednarczyk")).toBe(false);
+  });
+});
+
+describe("whether the exported PDF's Title names the origin", () => {
+  const origin = "remigiuszbednarczyk.com";
+
+  it("accepts a title that carries the origin", () => {
+    expect(titleMissingProvenance(`Remigiusz Bednarczyk — CV — ${origin}`, origin)).toBe(false);
+  });
+
+  it("reports a title that does not", () => {
+    // The live page's own title names the person and the role but not the
+    // origin, so the untagged print — the beforeprint hook gone — fails here.
+    expect(
+      titleMissingProvenance("Remigiusz Bednarczyk | Quality Engineering Lead", origin),
+    ).toBe(true);
+  });
+
+  it("treats a PDF with no Title metadata at all as the failure it is", () => {
+    expect(titleMissingProvenance(null, origin)).toBe(true);
+    expect(titleMissingProvenance(undefined, origin)).toBe(true);
   });
 });
 
