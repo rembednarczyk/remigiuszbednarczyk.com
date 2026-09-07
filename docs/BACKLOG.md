@@ -6,6 +6,25 @@ decided against — not when it is forgotten.
 
 ---
 
+## Merged branches delete themselves
+
+The `claude/*` and `dependabot/*` branches piled up — thirty-odd — because
+nothing removed them once their pull request merged. GitHub has a setting for
+exactly this ("Automatically delete head branches"), but it is a setting and
+not something the repository states about itself: easy to leave off, invisible
+when it is, and unreachable from the tools that do the merging here. So the
+behaviour is a workflow instead — `.github/workflows/delete-merged-branch.yml`
+— where it is reviewed and holds whether or not the box is ticked. It deletes a
+PR's head branch when the PR merges (a fork's branch and an unmerged close are
+left alone), and carries a manual `workflow_dispatch` that sweeps the branches
+of every already-merged PR, to clear the pile the setting's absence left. The
+delete runs on GitHub's runner as an ordinary authenticated push, so it is not
+subject to the local push restriction that returns 403 here.
+`tests/workflowPins.test.ts` holds it to the same pin-and-permissions rule as
+the CI workflow.
+
+---
+
 ## The Dependabot batch, and the three majors that are not ready
 
 Dependabot's open PRs were taken together on one lockfile rather than merged
