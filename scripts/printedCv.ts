@@ -43,8 +43,12 @@ export interface PrintedPage {
  * The blank share of each sheet, in order, as the chosen layout produces
  * it. Measured from the PDF, not decided: sections kept whole leave these
  * gaps, and this is what they are.
+ *
+ * The last sheet reads fuller than the others' history because the provenance
+ * footer sits at the foot of it — a deliberate line, so the recorded shape
+ * moved with it (0.18 to 0.13) rather than the check being widened to hide it.
  */
-export const EXPECTED_LAYOUT = [0.38, 0.22, 0.14, 0.58, 0.05, 0.18];
+export const EXPECTED_LAYOUT = [0.38, 0.22, 0.14, 0.58, 0.05, 0.13];
 
 /**
  * How far a sheet may drift before it is worth a look.
@@ -102,6 +106,28 @@ export function layoutDrift(
 export function readsAsACv(pages: PrintedPage[], expectedName: string): boolean {
   const all = pages.flatMap((page) => page.text).join(" ");
   return pages.length > 0 && all.includes(expectedName);
+}
+
+/**
+ * Whether the exported PDF's Title metadata names the CV's origin.
+ *
+ * The origin is not hidden in the page — near-invisible body text is what an
+ * applicant tracking system flags as fraud, so it rides the PDF's Title
+ * instead, set for the print alone. A browser copies the document title into
+ * the file's Title metadata and nothing else it is given, so this is where a
+ * name-swap-resistant, ATS-safe mark lives. This reads it back: the print gate
+ * tags the title through the same `beforeprint` the browser fires, and this
+ * refuses a print whose metadata lost the origin — the hook gone, or the title
+ * left untagged.
+ *
+ * A null title is the failure, not an exception: a PDF with no Title metadata
+ * at all is exactly the case worth catching.
+ */
+export function titleMissingProvenance(
+  title: string | null | undefined,
+  origin: string,
+): boolean {
+  return title == null || !title.includes(origin);
 }
 
 /**

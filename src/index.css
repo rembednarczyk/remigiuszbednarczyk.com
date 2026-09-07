@@ -59,6 +59,36 @@ html {
   scroll-padding-bottom: var(--fixed-bar-space, 0);
 }
 
+/**
+ * A visitor who asked for less motion gets it, on every animation and not
+ * only the ones motion/react drives.
+ *
+ * The reveals and the entrances go through motion/react, which honours the
+ * preference through MotionProvider, and the particle canvas checks it in
+ * JS. But a plain Tailwind `animate-*` utility is a CSS keyframe animation
+ * that neither governs — and the second bughunt found two: the scroll-to-top
+ * chevron bouncing forever, and the mobile menu's slide-in. Rather than
+ * guard each one and the next, the whole class is closed here: under the
+ * preference, every animation runs once and instantly and every transition
+ * is immediate. The spinner is the one exception the preference still wants
+ * turning — it is progress feedback, not decoration — so it keeps its spin.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin {
+    animation-duration: 0.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
 /* The card the editor's cursor is in, when this page is the live preview.
    Set by src/preview/PreviewApp.tsx and never by the site itself, so the
    rule is inert on the deployed page. An outline rather than a border, so
