@@ -12,6 +12,7 @@ import {
   blankShareOf,
   layoutDrift,
   readsAsACv,
+  titleMissingProvenance,
   sheetsWhoseInkIsNotPlausible,
   whatADialogDidToThePrint,
   type PrintedPage,
@@ -42,6 +43,31 @@ function nameTheBuildDeclares(): string {
 
   if (!person) throw new Error("no Person name in the built page's structured data");
   return person[1];
+}
+
+/**
+ * The origin the printed CV should name, read from the same built page the
+ * rest of this gate reads its expected name out of, so a rename of the site's
+ * own address cannot leave this asserting a string the CV no longer carries.
+ */
+function originTheBuildDeclares(): string {
+  const html = readFileSync(join(dist, "index.html"), "utf8");
+  const url = /"@type"\s*:\s*"Person"[\s\S]*?"url"\s*:\s*"([^"]+)"/.exec(html);
+  if (!url) throw new Error("no Person url in the built page's structured data");
+  return url[1].replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+/**
+ * The exported PDF's Title metadata. This is where the provenance mark lives —
+ * put on the document by `beforeprint`, which `page.pdf()` fires the same way
+ * the browser's print command does, so the bytes read back here carry the
+ * tagged title.
+ */
+async function titleOf(pdf: Uint8Array): Promise<string | null> {
+  const doc = await getDocument({ data: pdf, useSystemFonts: true }).promise;
+  const { info } = await doc.getMetadata();
+  const title = (info as { Title?: unknown }).Title;
+  return typeof title === "string" ? title : null;
 }
 
 /**
@@ -164,6 +190,9 @@ async function main() {
     stop();
   }
 
+  // Read the metadata from a copy first: pdfjs detaches the buffer it is
+  // handed, so sheetsOf below would leave nothing for titleOf to reopen.
+  const title = await titleOf(pdf.slice());
   const pages = await sheetsOf(pdf);
   const withDialog = await sheetsOf(withDialogOpen);
 
@@ -184,6 +213,19 @@ async function main() {
     problems.push(
       `no text came back from the PDF, or it does not carry "${name}" — everything below would pass on an empty document`,
     );
+  }
+
+  const origin = originTheBuildDeclares();
+  if (titleMissingProvenance(title, origin)) {
+    problems.push(
+      `the exported CV's PDF Title metadata does not name its origin "${origin}": the Title is ${JSON.stringify(title)}. ` +
+        `The origin is meant to ride the PDF's Title — set for the print alone by the beforeprint hook in ` +
+        `src/hooks/usePrintProvenanceTitle.ts, which page.pdf() fires the same way the browser's print command does. ` +
+        `It is not hidden in the page body on purpose, because near-invisible body text is what an ATS flags; if this ` +
+        `fails, the hook is not running or the title is no longer being tagged.`,
+    );
+  } else {
+    console.log(`the exported CV's PDF Title names its origin: ${JSON.stringify(title)}`);
   }
 
   // And that the rasteriser read the page, which the comparison below cannot

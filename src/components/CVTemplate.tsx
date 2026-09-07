@@ -10,6 +10,7 @@ import { bodyOf } from "./CvBodies";
 import { cvData } from "../data/portfolioFacts";
 import { LINKEDIN_QR } from "../data/linkedinQr";
 import { CONTENT_UPDATED, formatIsoDate } from "../data/contentDate";
+import { PROVENANCE_FOOTER } from "../lib/provenance";
 import cvLayout from "../content/cvLayout.json" with { type: "json" };
 
 export const CVTemplate = () => {
@@ -119,6 +120,21 @@ export const CVTemplate = () => {
           </CvSection>
         );
       })}
+
+      {/*
+        The provenance footer. Plain, legible text at an ordinary size — not a
+        hidden mark: near-invisible body text is what an applicant tracking
+        system flags as keyword stuffing, so the origin is stated openly here
+        and carried again, out of the body, in the PDF's Title metadata
+        (src/hooks/usePrintProvenanceTitle.ts). A reader swapping the name in
+        can see and remove this; the price of a mark that is safe to submit.
+      */}
+      <footer
+        data-provenance="cv"
+        className="mt-8 pt-3 border-t border-slate-200 text-[9px] text-slate-500 text-center tracking-wide"
+      >
+        {PROVENANCE_FOOTER}
+      </footer>
     </div>
   );
 };
