@@ -1,0 +1,68 @@
+# Deletes a pull request's branch once it is merged, and — on demand — sweeps
+# the branches of PRs merged before this existed.
+#
+# GitHub has a repository setting that does the first half ("Automatically
+# delete head branches"), but it is a setting, not something the repository
+# states about itself, so it is easy to leave off and invisible when it is.
+# This keeps the behaviour in the repo, where it is reviewed and holds whether
+# or not the box is ticked, and it covers Dependabot's branches the same way.
+#
+# It runs on GitHub's own runner, so the delete is a normal authenticated push
+# and not subject to any local push restriction. checkout is here to give the
+# job a working tree with push credentials configured; the pin and the
+# permissions block are what tests/workflowPins.test.ts holds every workflow to.
+name: Delete merged branch
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  on-merge:
+    # A merged PR whose branch lives in this repository — never a fork's, and
+    # never a PR that was closed without merging.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Delete the merged head branch
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ "$BRANCH" = "$DEFAULT" ]; then
+            echo "Refusing to delete the default branch."; exit 0
+          fi
+          git push origin --delete "$BRANCH" && echo "Deleted $BRANCH" || echo "$BRANCH was already gone."
+
+  sweep:
+    # Manual backfill: delete the head branch of every already-merged PR whose
+    # branch is in this repository. Open PRs are not merged, so they are left
+    # alone. Run it once to clear the branches that piled up before this landed.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Delete every merged PR's head branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+        run: |
+          gh pr list --state merged --limit 500 \
+            --json headRefName,headRepositoryOwner \
+            --jq ".[] | select(.headRepositoryOwner.login == \"$OWNER\") | .headRefName" \
+            | sort -u | while IFS= read -r branch; do
+                [ -z "$branch" ] && continue
+                [ "$branch" = "$DEFAULT" ] && continue
+                if git push origin --delete "$branch" 2>/dev/null; then
+                  echo "deleted $branch"
+                fi
+              done
