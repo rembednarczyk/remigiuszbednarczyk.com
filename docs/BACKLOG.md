@@ -6,6 +6,35 @@ decided against — not when it is forgotten.
 
 ---
 
+## The Dependabot batch, and the three majors that are not ready
+
+Dependabot's open PRs were taken together on one lockfile rather than merged
+one at a time — they all touch the lockfile or the one workflow file and would
+conflict pairwise. Applied: the minor-and-patch group (Storybook 10.5 → 10.6,
+testing-library, the type packages, lucide-react, motion, globals — the icon
+registry test holds lucide, the reduced-motion test holds motion) and the four
+SHA-pinned action bumps (checkout v7, setup-node v7, upload-pages-artifact v5,
+deploy-pages v5).
+
+Three majors were held, each measured rather than guessed:
+
+- **TypeScript 7.** `tsc --noEmit` passes clean on 7, but typescript-eslint 8
+  refuses to load under it ("does not support TS 7.0", peer `<6.1.0`; TS ≥7.1
+  support still open upstream). Adopting 7 means dropping type-aware lint, which
+  is the wrong trade. Waits for a typescript-eslint release that accepts 7.
+- **ESLint 10 (and `@eslint/js` 10).** Three of this repository's ESLint plugins
+  — import, jsx-a11y and react — still peer-cap at ESLint 9, and the dependency
+  gate forbids the `--legacy-peer-deps` that would paper over it. ESLint 10 waits
+  for those three to publish a release that accepts it. (The editor took ESLint 10
+  in the same batch because it carries none of those three plugins.)
+- **@typescript-eslint 8.68 → 8.69.** Trivial, and held only here: this
+  environment's npm would not resolve the meta package to 8.69 (it fell back to
+  8.68 and conflicted), and a bump that cannot be built locally is not one to
+  claim. All three are published at 8.69, so Dependabot's own group resolves it —
+  its PR is left to carry that one patch once the rest of its group has landed.
+
+---
+
 ## A provenance mark on the printed CV, and why it is not hidden
 
 The CV is the one artifact this site hands a stranger to keep, and the theft
