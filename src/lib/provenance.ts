@@ -1,8 +1,8 @@
 import { cvData } from "../data/portfolioFacts";
 
 /**
- * Where the printed CV says it came from, and why it says so twice without
- * ever hiding a word.
+ * Where the printed CV says it came from — a plain, visible line, and nothing
+ * hidden.
  *
  * The CV is the one thing this site hands a stranger to keep: a PDF that
  * leaves the site and travels on its own. The theft worth guarding against is
@@ -11,46 +11,29 @@ import { cvData } from "../data/portfolioFacts";
  *
  * The first instinct was to hide a mark where a name-swapper would not look:
  * white text in the print's layer, invisible on the sheet. That was built,
- * measured, and then pulled out, because it is exactly the pattern an
- * applicant tracking system flags as fraud. Invisible or near-invisible body
- * text — white on white, a one-pixel font, anything positioned off the page —
- * is the signature of keyword stuffing, and an ATS that finds it can quietly
- * drop the CV or blacklist the sender. A safeguard that gets the document
- * auto-rejected is worse than no safeguard, so nothing here hides text in the
- * page's body.
+ * measured, and pulled out, because near-invisible body text — white on white,
+ * a one-pixel font, anything off the page — is exactly the keyword-stuffing
+ * signature an applicant tracking system flags, and a mark that gets the CV
+ * auto-rejected is worse than none. So nothing here hides text in the body.
  *
- * What is left are two channels that carry the origin without a hidden word:
+ * A second channel put the origin in the PDF's Title metadata, out of the
+ * body, where an ATS reading the content never met it. That was pulled out
+ * too, for a plainer reason: the Title is the document's own name — what a
+ * recruiter sees as the file's title and its suggested filename — and a CV
+ * reads better named for the person than for a domain. The title is the CV's
+ * own name now (`src/hooks/usePrintTitle.ts`), and the origin rides the one
+ * remaining channel:
  *
- *   - The PDF's Title metadata. A browser printing to PDF copies the page's
- *     `<title>` into the document's Title, and nothing else it is given —
- *     measured: `<meta>` author, subject and keywords are dropped. Title is
- *     not body text, so an ATS reading the document's content never meets it,
- *     and editing the visible page does not touch it. It is the overlookable
- *     layer: it survives a name-swap and reads back from the file's
- *     properties, though a determined thief can strip it with a metadata
- *     editor.
+ *   - A plain footer line on the page. Ordinary dark text at an ordinary size
+ *     that an ATS reads as the professional detail it looks like. A name-
+ *     swapper can see and delete it — the price of a mark that is safe to
+ *     submit — but a careless one may leave it.
  *
- *   - A plain, legible footer line on the page. Ordinary dark text at an
- *     ordinary size — an ATS reads it as the professional detail it looks
- *     like, and there is nothing about it to flag. A name-swapper can see and
- *     delete it, which is the price of it being safe to submit; a careless one
- *     may leave it.
- *
- * Both are derived from the facts the CV already renders — the origin is the
- * site's own `website`, the name is the CV's — so the day either changes, both
- * follow rather than going stale.
+ * Derived from the CV's own `website`, so a rename cannot strand it.
  */
 
-/** The origin both channels assert: the site this CV was generated from. */
+/** The origin the footer asserts: the site this CV was generated from. */
 export const PROVENANCE_ORIGIN: string = cvData.header.website;
-
-/**
- * The title the exported PDF should carry in its metadata. Names the person
- * and the origin, so reading the file's properties answers both whose CV it
- * is and where it came from. Set on the document only while printing, so the
- * live page keeps the title search engines index.
- */
-export const PROVENANCE_TITLE = `${cvData.header.name} — CV — ${PROVENANCE_ORIGIN}`;
 
 /** The visible footer line: plain, legible, and true whatever the reader does. */
 export const PROVENANCE_FOOTER = `Generated from ${PROVENANCE_ORIGIN}`;

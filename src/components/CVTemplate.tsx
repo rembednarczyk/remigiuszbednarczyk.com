@@ -114,12 +114,13 @@ export const CVTemplate = () => {
       })}
 
       {/*
-        The provenance footer. Plain, legible text at an ordinary size — not a
-        hidden mark: near-invisible body text is what an applicant tracking
-        system flags as keyword stuffing, so the origin is stated openly here
-        and carried again, out of the body, in the PDF's Title metadata
-        (src/hooks/usePrintProvenanceTitle.ts). A reader swapping the name in
-        can see and remove this; the price of a mark that is safe to submit.
+        The provenance footer, and the only place the origin is stated: plain,
+        legible text at an ordinary size — not a hidden mark, since near-
+        invisible body text is what an applicant tracking system flags as
+        keyword stuffing. A reader swapping the name in can see and remove
+        this; the price of a mark that is safe to submit. Why it is the only
+        channel — the PDF Title was one too, and gave way to naming the file
+        for the person — is in src/lib/provenance.ts.
       */}
       <footer
         data-provenance="cv"

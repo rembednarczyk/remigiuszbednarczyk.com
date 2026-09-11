@@ -2,31 +2,35 @@ import { render, renderHook } from "@testing-library/react";
 import { act } from "react";
 import { describe, expect, it } from "vitest";
 import { CVTemplate } from "../src/components/CVTemplate";
-import { usePrintProvenanceTitle } from "../src/hooks/usePrintProvenanceTitle";
-import {
-  PROVENANCE_FOOTER,
-  PROVENANCE_ORIGIN,
-  PROVENANCE_TITLE,
-} from "../src/lib/provenance";
+import { PRINT_TITLE, usePrintTitle } from "../src/hooks/usePrintTitle";
+import { PROVENANCE_FOOTER, PROVENANCE_ORIGIN } from "../src/lib/provenance";
 import { cvData } from "../src/data/portfolioFacts";
 
 /**
- * The printed CV names where it came from, on two ATS-safe channels and with
- * nothing hidden. The origin it guards was first carried as invisible white
- * text; that was pulled out because near-invisible body text is exactly what
- * an applicant tracking system flags as keyword stuffing, and a safeguard that
- * gets the CV auto-rejected is worse than none. So it rides a plain visible
- * footer and the PDF's Title metadata instead — held here, with the "nothing
- * hidden" property guarded directly so the white-text version cannot creep
- * back.
+ * The printed CV names where it came from on one channel, in plain sight — a
+ * footer line — and names the exported file for the person. The origin was
+ * once carried a second way, hidden as white text in the print's layer; that
+ * was pulled out because near-invisible body text is what an applicant
+ * tracking system flags as keyword stuffing, and a mark that gets the CV
+ * auto-rejected is worse than none. So the footer's "nothing hidden" property
+ * is guarded directly here, and the white-text version cannot creep back.
  */
 
 describe("what the provenance strings assert", () => {
   it("are derived from the CV's own facts, so a rename cannot strand them", () => {
     expect(PROVENANCE_ORIGIN).toBe(cvData.header.website);
-    expect(PROVENANCE_TITLE).toContain(cvData.header.website);
-    expect(PROVENANCE_TITLE).toContain(cvData.header.name);
     expect(PROVENANCE_FOOTER).toContain(cvData.header.website);
+  });
+});
+
+describe("the exported CV's document name", () => {
+  it("is the CV's name, not the domain — the person, their title, and CV", () => {
+    // Derived, so a rename follows it: the person and their title from the CV,
+    // the word "CV", and nothing else — no separators to render oddly in a
+    // filename, and no origin (that is the footer's job).
+    expect(PRINT_TITLE).toBe(`${cvData.header.name} ${cvData.header.title} CV`);
+    expect(PRINT_TITLE).not.toContain(cvData.header.website);
+    expect(PRINT_TITLE).not.toContain("—");
   });
 });
 
@@ -66,15 +70,15 @@ describe("the printed CV's visible footer", () => {
 });
 
 describe("the print-time PDF title", () => {
-  it("tags the document only while printing, and restores it after", () => {
+  it("names the document for the person only while printing, and restores it after", () => {
     document.title = "Live Page Title";
-    renderHook(() => usePrintProvenanceTitle());
+    renderHook(() => usePrintTitle());
 
     act(() => {
       window.dispatchEvent(new Event("beforeprint"));
     });
-    // What the exported PDF's Title metadata is copied from.
-    expect(document.title).toBe(PROVENANCE_TITLE);
+    // What the exported PDF's Title metadata and suggested filename copy from.
+    expect(document.title).toBe(PRINT_TITLE);
 
     act(() => {
       window.dispatchEvent(new Event("afterprint"));
@@ -85,14 +89,14 @@ describe("the print-time PDF title", () => {
 
   it("restores the live title when it unmounts mid-print", () => {
     // A print dialog left open when the component unmounts must not strand the
-    // tagged title on the live document.
+    // CV name on the live document.
     document.title = "Live Page Title";
-    const { unmount } = renderHook(() => usePrintProvenanceTitle());
+    const { unmount } = renderHook(() => usePrintTitle());
 
     act(() => {
       window.dispatchEvent(new Event("beforeprint"));
     });
-    expect(document.title).toBe(PROVENANCE_TITLE);
+    expect(document.title).toBe(PRINT_TITLE);
 
     act(() => {
       unmount();

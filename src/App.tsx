@@ -4,7 +4,7 @@ import { pageBodyOf } from "./components/PageBodies";
 import { numbered } from "./lib/pageLayout";
 import { useContent } from "./data/content";
 import { useAutoPrint } from "./hooks/useAutoPrint";
-import { usePrintProvenanceTitle } from "./hooks/usePrintProvenanceTitle";
+import { usePrintTitle } from "./hooks/usePrintTitle";
 import { useCookieConsent } from "./hooks/useCookieConsent";
 import { useHashTarget } from "./hooks/useHashTarget";
 import { isKnownPath } from "./lib/routing";
@@ -59,9 +59,9 @@ export function Portfolio() {
   // Only the page can be printed; there is nothing on a 404 worth paper.
   useAutoPrint();
 
-  // Tag the printed CV's PDF metadata with where it came from, for the print
-  // only — the live page's title is left as search engines index it.
-  usePrintProvenanceTitle();
+  // Name the printed CV's PDF for the person, not the indexed page title, for
+  // the print only — the live page's title is left as search engines index it.
+  usePrintTitle();
 
   // The sections do not exist when the browser looks for the anchor, so a
   // shared link to one of them has to be honoured here instead.
