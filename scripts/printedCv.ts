@@ -109,25 +109,25 @@ export function readsAsACv(pages: PrintedPage[], expectedName: string): boolean 
 }
 
 /**
- * Whether the exported PDF's Title metadata names the CV's origin.
+ * Whether the exported PDF's Title metadata is the CV's own name rather than
+ * the page's.
  *
- * The origin is not hidden in the page — near-invisible body text is what an
- * applicant tracking system flags as fraud, so it rides the PDF's Title
- * instead, set for the print alone. A browser copies the document title into
- * the file's Title metadata and nothing else it is given, so this is where a
- * name-swap-resistant, ATS-safe mark lives. This reads it back: the print gate
- * tags the title through the same `beforeprint` the browser fires, and this
- * refuses a print whose metadata lost the origin — the hook gone, or the title
- * left untagged.
+ * The live page's title is built for search engines — the name, a pipe, the
+ * full role — which is the wrong thing to offer as a CV's filename, so the
+ * print hook swaps in the CV's name ("<person> <title> CV") for the print
+ * alone. This reads the Title back and refuses a print that still carries the
+ * page title: it must hold the person's name and the word "CV", which the
+ * indexed page title does not. The hook gone, or `beforeprint` not firing,
+ * leaves the page title and fails here.
  *
  * A null title is the failure, not an exception: a PDF with no Title metadata
  * at all is exactly the case worth catching.
  */
-export function titleMissingProvenance(
+export function titleIsNotCvName(
   title: string | null | undefined,
-  origin: string,
+  name: string,
 ): boolean {
-  return title == null || !title.includes(origin);
+  return title == null || !title.includes(name) || !/\bCV\b/.test(title);
 }
 
 /**

@@ -72,30 +72,29 @@ Near-invisible body text — white on white, a one-pixel font, anything
 positioned off the page — is exactly the signature an applicant tracking
 system flags as keyword stuffing, and an ATS that finds it can drop the CV or
 blacklist the sender. A safeguard that gets the document auto-rejected is
-worse than none. So nothing here hides text in the page's body; the origin is
-carried on two channels that are safe to submit:
-
-- **The PDF's Title metadata.** A browser printing to PDF copies the page
-  title into the file's Title and — measured — drops the `<meta>` author,
-  subject and keywords it is also given, so Title is the one channel. It is
-  not body text, so an ATS reading the content never meets it, and editing the
-  visible page does not touch it. `usePrintProvenanceTitle` tags the title on
-  `beforeprint` and restores it on `afterprint`, so only the printed document
-  carries it and the live page keeps the title search engines index.
-  `page.pdf()` fires `beforeprint` the same way the browser's print command
-  does, so `scripts/runPrintCheck.ts` reads the tagged Title back and fails if
-  it stops naming the origin (`titleMissingProvenance`). Overlookable, and
-  survives a name-swap; a determined thief can strip it with a metadata editor.
+worse than none. So nothing here hides text in the page's body. The origin
+was carried on two channels for a while; it is one now:
 
 - **A plain visible footer.** Ordinary dark text at an ordinary size that
   `CVTemplate` renders and an ATS reads as the professional detail it looks
-  like. A name-swapper can see and delete it — the price of a mark that is
-  safe to submit — but a careless one may leave it.
+  like, derived from the CV's own address so a rename cannot strand it. A
+  name-swapper can see and delete it — the price of a mark that is safe to
+  submit — but a careless one may leave it.
 
-`src/lib/provenance.ts` derives both from the CV's own facts, and
-`tests/provenance.test.tsx` also guards the reason the white version went: it
-fails if anything the CV renders is white, sub-visible, or clipped to nothing,
-so the hidden mark cannot creep back.
+- **The PDF's Title metadata — since removed.** A browser printing to PDF
+  copies the page title into the file's Title, so the origin rode there too,
+  out of the body, set for the print alone. It was pulled out for a plainer
+  reason than the white text was: the Title is the document's own name and its
+  suggested filename, and a CV reads better named for the person than for a
+  domain. The Title is the CV's own name now — the person, their title, "CV" —
+  set by `usePrintTitle` (`src/hooks/usePrintTitle.ts`) on `beforeprint`, and
+  `scripts/runPrintCheck.ts` checks it is that (`titleIsNotCvName`) rather than
+  the indexed page title.
+
+`src/lib/provenance.ts` derives the footer from the CV's own facts, and
+`tests/provenance.test.tsx` guards the reason the white version went: it fails
+if anything the CV renders is white, sub-visible, or clipped to nothing, so
+the hidden mark cannot creep back.
 
 **What this does not claim.** It survives a name-swap and a reformat, not a
 retype: a thief who re-keys every word carries nothing across, and no

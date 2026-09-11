@@ -6,7 +6,7 @@ import {
   layoutDrift,
   readsAsACv,
   sheetsWhoseInkIsNotPlausible,
-  titleMissingProvenance,
+  titleIsNotCvName,
   type PrintedPage,
 } from "../scripts/printedCv";
 
@@ -132,24 +132,25 @@ describe("whether the extraction found anything at all", () => {
   });
 });
 
-describe("whether the exported PDF's Title names the origin", () => {
-  const origin = "remigiuszbednarczyk.com";
+describe("whether the exported PDF's Title is the CV's name", () => {
+  const name = "Remigiusz Bednarczyk";
 
-  it("accepts a title that carries the origin", () => {
-    expect(titleMissingProvenance(`Remigiusz Bednarczyk — CV — ${origin}`, origin)).toBe(false);
+  it("accepts the CV name the print hook sets", () => {
+    expect(titleIsNotCvName(`${name} Test Manager CV`, name)).toBe(false);
   });
 
-  it("reports a title that does not", () => {
-    // The live page's own title names the person and the role but not the
-    // origin, so the untagged print — the beforeprint hook gone — fails here.
+  it("reports the indexed page title, which is what an untagged print carries", () => {
+    // The live page's own title names the person and the role but is not a CV
+    // name — no "CV" in it — so the untagged print, the beforeprint hook gone,
+    // fails here.
     expect(
-      titleMissingProvenance("Remigiusz Bednarczyk | Quality Engineering Lead", origin),
+      titleIsNotCvName("Remigiusz Bednarczyk | Quality Engineering Lead & Test Manager", name),
     ).toBe(true);
   });
 
   it("treats a PDF with no Title metadata at all as the failure it is", () => {
-    expect(titleMissingProvenance(null, origin)).toBe(true);
-    expect(titleMissingProvenance(undefined, origin)).toBe(true);
+    expect(titleIsNotCvName(null, name)).toBe(true);
+    expect(titleIsNotCvName(undefined, name)).toBe(true);
   });
 });
 
