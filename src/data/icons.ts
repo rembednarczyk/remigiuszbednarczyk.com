@@ -181,3 +181,38 @@ export function accentOf(tone: string): string {
 
   return accent;
 }
+
+/**
+ * The border a card lifts to on hover and press, in the same accent its icon
+ * wears — so a card highlights the colour it is coloured, rather than the one
+ * cyan the cards were all frozen to when the icons gained their own accents.
+ *
+ * Written out per tone rather than composed as `border-${tone}-400/50`,
+ * because Tailwind only emits the classes it can see spelled in the source —
+ * the same reason `AwardTone`'s colours and `ACCENTS` above are literal
+ * strings and not built from the name. One entry per accent, so a card that
+ * takes a new tone is coloured on press the day it does, not after someone
+ * remembers to widen this.
+ */
+export const ACCENT_HIGHLIGHTS = {
+  cyan: "hover:border-cyan-400/50 active:border-cyan-400/50",
+  purple: "hover:border-purple-400/50 active:border-purple-400/50",
+  emerald: "hover:border-emerald-400/50 active:border-emerald-400/50",
+  orange: "hover:border-orange-400/50 active:border-orange-400/50",
+  rose: "hover:border-rose-400/50 active:border-rose-400/50",
+  amber: "hover:border-amber-400/50 active:border-amber-400/50",
+  lime: "hover:border-lime-400/50 active:border-lime-400/50",
+  blue: "hover:border-blue-400/50 active:border-blue-400/50",
+} as const satisfies Record<AccentName, string>;
+
+export function accentHighlightOf(tone: string): string {
+  const highlight = (ACCENT_HIGHLIGHTS as Record<string, string>)[tone];
+
+  if (highlight === undefined) {
+    throw new Error(
+      `content asks for a ${tone} accent, and there are only ${Object.keys(ACCENT_HIGHLIGHTS).join(", ")}`,
+    );
+  }
+
+  return highlight;
+}

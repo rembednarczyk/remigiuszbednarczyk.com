@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import * as cards from "../src/data/portfolioData";
 import * as facts from "../src/data/portfolioFacts";
+import { ACCENT_HIGHLIGHTS } from "../src/data/icons";
 import { fillPlaceholders } from "../src/data/placeholders";
 import { withoutComments } from "../scripts/withoutComments";
 
@@ -127,9 +128,25 @@ describe("the content tree", () => {
   });
 });
 
+/**
+ * The card press-highlight is presentation the assembly layer owns, the same
+ * category as the icon's accent class the `stringsIn` block above exempts —
+ * that one rides inside a React element, so `$$typeof` skips it; this one is a
+ * sibling string on the card (so a card can colour its border to match its
+ * icon without wrapping the classes in an element), so it is named here.
+ *
+ * Only the known bundles from `ACCENT_HIGHLIGHTS`, so this exempts presentation
+ * and nothing else: an invented sentence handed out as a card's highlight
+ * still fails, and a highlight naming a colour the palette does not have would
+ * have thrown in `accentHighlightOf` long before reaching here.
+ */
+const presentation = new Set<string>(Object.values(ACCENT_HIGHLIGHTS));
+
 describe("what the assembly layer hands out", () => {
   it("comes from a content file, every word of it", () => {
-    const invented = [...new Set(handedOut)].filter((text) => !offered.has(text));
+    const invented = [...new Set(handedOut)].filter(
+      (text) => !offered.has(text) && !presentation.has(text),
+    );
 
     expect(
       invented,
