@@ -7,3 +7,10 @@ storybook-static/
 *.log
 .env*
 !.env.example
+
+# Agent skills installed locally with `npx skills add …` — developer tooling,
+# not part of the site. The `.claude/skills/` symlinks point into `.agents/`;
+# the committed `.claude/` content (hooks, settings.json) is untouched.
+/.agents/
+/.claude/skills/
+/skills-lock.json
