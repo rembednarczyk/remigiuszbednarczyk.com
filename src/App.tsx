@@ -13,6 +13,7 @@ import { Footer } from "./components/layout/Footer";
 import { ParticleBackground } from "./components/ParticleBackground";
 import { CVTemplate } from "./components/CVTemplate";
 import { ScrollToTop } from "./components/ui/ScrollToTop";
+import { ScrollProgress } from "./components/ui/ScrollProgress";
 import { NotFound } from "./components/NotFound";
 import { PreviewApp } from "./preview/PreviewApp";
 import { PREVIEW_PATH } from "./preview/protocol";
@@ -83,6 +84,9 @@ export function Portfolio() {
       <div className="print:hidden">
         {/* Interactive Space/IT Background */}
         <ParticleBackground />
+
+        {/* Reading-progress bar, pinned above the navbar */}
+        <ScrollProgress />
 
         {/* Navbar */}
         <Navbar />

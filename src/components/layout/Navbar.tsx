@@ -3,10 +3,12 @@ import { m, AnimatePresence } from "motion/react";
 import { ShieldCheck, Download, Menu, X } from "lucide-react";
 import { useActiveSection } from "../../hooks/useActiveSection";
 import { useScrollToSection } from "../../hooks/useScrollToSection";
+import { useScrolled } from "../../hooks/useScrolled";
 import { NAV_ITEMS, SECTION_TO_NAV_ENTRY } from "../../data/navigation";
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const scrolled = useScrolled();
   const activeSection = useActiveSection(SECTION_TO_NAV_ENTRY);
   const scrollToSection = useScrollToSection();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -34,7 +36,19 @@ export function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#020617]/80 backdrop-blur-md border-b border-white/10">
+    <nav
+      data-scrolled={scrolled}
+      // "Deepen only" on scroll: once past the hero the bar's ground goes
+      // from 80% to 96% opaque and gains a shadow and a brighter hairline,
+      // so it separates from the content sliding under it. The height is
+      // deliberately left alone — animating it would move layout, which the
+      // motion pass rejected in favour of touching paint (background, shadow,
+      // border) only. useScrolled reads the position on mount, so a reload
+      // below the fold opens already-deepened rather than flipping on the
+      // first scroll. The reduced-motion block in index.css makes the
+      // transition instant, keeping the state change without the fade.
+      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b bg-[#020617]/80 border-white/10 transition-[background-color,box-shadow,border-color] duration-200 data-[scrolled=true]:bg-[#020617]/95 data-[scrolled=true]:shadow-lg data-[scrolled=true]:shadow-black/20 data-[scrolled=true]:border-white/20"
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <button
           className="flex items-center gap-2 cursor-pointer group focus-ring rounded-lg p-2.5 -ml-2.5 transition-transform active:scale-95"
