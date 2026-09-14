@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { ACCENT_HIGHLIGHTS } from "../../data/icons";
 
 /**
  * A card headed by an icon tile and a title, with the caller's content below.
@@ -22,13 +23,26 @@ export interface IconCardProps {
   children: ReactNode;
   /** Where this card is edited, for the live preview — see src/preview/edit.ts. */
   edit?: string | undefined;
+  /**
+   * The hover/press border, in the icon's accent. Cyan by default because the
+   * expertise cards are all cyan; the certification cards, whose accent
+   * varies by group, pass their own so the card highlights the colour it
+   * wears rather than the one cyan they were frozen to.
+   */
+  highlight?: string;
 }
 
-export function IconCard({ icon, title, children, edit }: IconCardProps) {
+export function IconCard({
+  icon,
+  title,
+  children,
+  edit,
+  highlight = ACCENT_HIGHLIGHTS.cyan,
+}: IconCardProps) {
   return (
     <article
       data-edit={edit}
-      className="group bg-[#0a1128]/80 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-cyan-400/50 hover:-translate-y-1 active:scale-95 active:border-cyan-400/50 transition-all duration-300"
+      className={`group bg-[#0a1128]/80 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:-translate-y-1 active:scale-95 ${highlight} transition-all duration-300`}
     >
       <div
         className="w-12 h-12 rounded-lg bg-cyan-400/10 flex items-center justify-center mb-4 group-hover:scale-110 group-active:scale-110 transition-transform duration-300"

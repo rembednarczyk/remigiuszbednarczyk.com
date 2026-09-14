@@ -6,7 +6,7 @@ import {
   KeyProject,
   BrandItem,
 } from "../types";
-import { ACCENTS, accentOf, iconOf } from "./icons";
+import { ACCENTS, ACCENT_HIGHLIGHTS, accentOf, accentHighlightOf, iconOf } from "./icons";
 import brandPresenceContent from "../content/brandPresence.json" with { type: "json" };
 import certificationsSummaryContent from "../content/certificationsSummary.json" with { type: "json" };
 import communityContent from "../content/community.json" with { type: "json" };
@@ -81,6 +81,8 @@ export function buildPresentation(raw: PresentationRaw): Presentation {
         title: area.title,
         desc: area.desc,
         icon: <Icon size={SIZES.expertise} className={ACCENTS.cyan} />,
+        // The accent does not vary here, so neither does the press highlight.
+        highlight: ACCENT_HIGHLIGHTS.cyan,
       };
     }),
 
@@ -90,6 +92,7 @@ export function buildPresentation(raw: PresentationRaw): Presentation {
         name: category.name,
         icon: <Icon className={accentOf(category.accent)} />,
         skills: category.skills,
+        highlight: accentHighlightOf(category.accent),
       };
     }),
 
@@ -128,6 +131,7 @@ export function buildPresentation(raw: PresentationRaw): Presentation {
         title: item.title,
         desc: item.desc,
         icon: <Icon size={SIZES.brand} className={`${accentOf(item.accent)} ${BRAND_ICON}`} />,
+        highlight: accentHighlightOf(item.accent),
       };
     }),
 
@@ -144,6 +148,7 @@ export function buildPresentation(raw: PresentationRaw): Presentation {
         title: group.title,
         items: group.items,
         icon: <Icon size={SIZES.certification} className={accentOf(group.accent)} />,
+        highlight: accentHighlightOf(group.accent),
       };
     }),
   };

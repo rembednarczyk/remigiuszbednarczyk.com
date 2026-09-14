@@ -10,6 +10,8 @@ export interface SkillCategory {
   name: string;
   icon: ReactNode;
   skills: string[];
+  /** Hover/press border classes matching the icon's accent — see accentHighlightOf. */
+  highlight: string;
 }
 
 /**
@@ -54,6 +56,8 @@ export interface BrandItem {
   title: string;
   desc: string;
   icon: ReactNode;
+  /** Hover/press border classes matching the icon's accent — see accentHighlightOf. */
+  highlight: string;
 }
 
 export interface Certification {
@@ -65,12 +69,16 @@ export interface Certification {
    * nothing could count it, compare it, or notice an entry going missing.
    */
   items: string[];
+  /** Hover/press border classes matching the icon's accent — see accentHighlightOf. */
+  highlight: string;
 }
 
 export interface Expertise {
   title: string;
   icon: ReactNode;
   desc: string;
+  /** Hover/press border classes matching the icon's accent — see accentHighlightOf. */
+  highlight: string;
 }
 
 export interface KeyProjectLink {
