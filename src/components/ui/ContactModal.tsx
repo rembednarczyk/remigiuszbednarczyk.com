@@ -45,14 +45,46 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
       initialFocusRef={firstInputRef}
     >
       {status === "success" ? (
-        <m.div 
-          initial={{ opacity: 0 }} 
+        <m.div
+          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="flex flex-col items-center justify-center py-8 text-center"
         >
-          <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-4" aria-hidden="true" />
-          <h3 className="text-xl font-bold text-white mb-2">Message Sent!</h3>
-          <p className="text-slate-400">Thank you for reaching out. I&apos;ll get back to you soon.</p>
+          {/*
+            Sending a message is the rarest, highest-emotion moment the site
+            has, and the one place a beat of delight is earned rather than
+            indulgent. The check springs in from 0.8 so the confirmation
+            lands as an arrival, not a swap; the copy is held back a beat so
+            the eye reaches the mark first. Reduced motion is not handled
+            here — MotionConfig reducedMotion="user" in App.tsx switches the
+            transform off for the whole tree, the same reason Reveal does not
+            repeat it. The wrapper is content-width under the parent's
+            items-center, so it stays centred.
+          */}
+          <m.div
+            className="mb-4"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", duration: 0.4, bounce: 0.25 }}
+          >
+            <CheckCircle2 className="w-16 h-16 text-emerald-400" aria-hidden="true" />
+          </m.div>
+          <m.h3
+            className="text-xl font-bold text-white mb-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.12 }}
+          >
+            Message Sent!
+          </m.h3>
+          <m.p
+            className="text-slate-400"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.12 }}
+          >
+            Thank you for reaching out. I&apos;ll get back to you soon.
+          </m.p>
         </m.div>
       ) : (
         <form onSubmit={submit} className="space-y-4">

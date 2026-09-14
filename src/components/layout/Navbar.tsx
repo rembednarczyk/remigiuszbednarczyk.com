@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { m, AnimatePresence } from "motion/react";
 import { ShieldCheck, Download, Menu, X } from "lucide-react";
 import { useActiveSection } from "../../hooks/useActiveSection";
 import { useScrollToSection } from "../../hooks/useScrollToSection";
@@ -136,11 +137,30 @@ export function Navbar() {
         stay reachable. Where there is room the subtraction still wins and
         nothing changes.
       */}
-      {isMobileMenuOpen && (
-        <div
-          ref={menuRef}
-          className="lg:hidden absolute top-20 right-4 w-56 sm:w-64 max-h-[max(7.5rem,calc(100vh-6rem-var(--fixed-bar-space,0px)))] overflow-y-auto bg-[#020617]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl py-4 px-5 flex flex-col gap-3 text-sm font-medium origin-top-right animate-in fade-in slide-in-from-top-4 duration-200 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
-        >
+      {/*
+        AnimatePresence rather than a bare `{isMobileMenuOpen && …}` so the
+        menu leaves the way it arrived. It entered with `animate-in
+        slide-in-from-top-4` and then vanished on close, unmounted mid-frame
+        — a surface that tells a spatial story on the way in and teleports
+        out reads as broken in a way people cannot name. motion/react holds
+        it mounted through the exit and plays the same path in reverse. The
+        `origin-top-right` class stays: the scale grows from and collapses
+        toward the trigger's corner. The drawer curve is the one Modal's
+        panel is closest to; reduced motion is App.tsx's MotionConfig, which
+        also replaces the CSS `animate-in` this dropped — the one Tailwind
+        animation the reduced-motion block in index.css was neutralising by
+        hand.
+      */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <m.div
+            ref={menuRef}
+            initial={{ opacity: 0, y: -12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.97 }}
+            transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+            className="lg:hidden absolute top-20 right-4 w-56 sm:w-64 max-h-[max(7.5rem,calc(100vh-6rem-var(--fixed-bar-space,0px)))] overflow-y-auto bg-[#020617]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl py-4 px-5 flex flex-col gap-3 text-sm font-medium origin-top-right scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+          >
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
@@ -150,8 +170,9 @@ export function Navbar() {
               {item.label}
             </button>
           ))}
-        </div>
-      )}
+          </m.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }

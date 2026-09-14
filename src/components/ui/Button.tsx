@@ -9,7 +9,16 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className = "", variant = "primary", size = "md", isLoading, children, disabled, ...props }, ref) => {
-    const baseStyles = "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-ring disabled:pointer-events-none disabled:opacity-50";
+    // active:scale-95 is the press every hand-rolled button on the site
+    // already carries — Hero's CTAs, the nav links, the CV download — and
+    // this shared primitive was the one control without it, so the most
+    // reused button on the page was the only one that felt dead under a
+    // finger. The transition names transform alongside the colours it
+    // already animated rather than widening to `transition-all`, so nothing
+    // but these properties eases. disabled:active:scale-100 keeps a disabled
+    // button from pressing in, since pointer-events-none does not cover a
+    // programmatic :active.
+    const baseStyles = "inline-flex items-center justify-center rounded-md font-medium transition-[color,background-color,border-color,transform] active:scale-95 disabled:active:scale-100 focus-ring disabled:pointer-events-none disabled:opacity-50";
     
     const variants = {
       primary: "bg-cyan-500 text-slate-950 hover:bg-cyan-400",
