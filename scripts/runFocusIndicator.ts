@@ -125,8 +125,9 @@ const SETTLE_MS = 450;
  * something that happens quietly.
  */
 // 29 since the TestingLab card's second edition: its report is one more link
-// on the page, at every width.
-const EXPECTED_KEYBOARD_STOPS = 29;
+// on the page, at every width. 30 since the Hero gained the view-source `</>`
+// trigger (SourceGlitch), one more focusable control at every width.
+const EXPECTED_KEYBOARD_STOPS = 30;
 
 /**
  * What one sweep under the banner covers, per width: the page's controls
@@ -138,9 +139,11 @@ const EXPECTED_KEYBOARD_STOPS = 29;
  * was wrong at both widths — which is the mistake this whole file exists to
  * make expensive.
  */
+// Each +1 since the Hero's view-source `</>` trigger (SourceGlitch), one more
+// control the banner sweep covers at both widths.
 const EXPECTED_CONTROLS_UNDER_THE_BANNER: Record<number, number> = {
-  1280: 29,
-  768: 23,
+  1280: 30,
+  768: 24,
 };
 
 function countMustMatch(what: string, found: number, recorded: number): void {

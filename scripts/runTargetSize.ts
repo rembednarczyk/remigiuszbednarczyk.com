@@ -286,7 +286,11 @@ async function main() {
  * focus gate was floored at "more than 20" while the page had 28, so a
  * truncation to 21 reported success. Measured, per the widths above.
  */
-const EXPECTED_TARGETS = 250;
+// 259 since the Hero's view-source `</>` trigger (SourceGlitch): one control
+// measured across both widths and every opened/scrolled state the sweep
+// visits. Its tap area clears 44x44, so the growth is in the count, not the
+// failures.
+const EXPECTED_TARGETS = 259;
 
 main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : error);
