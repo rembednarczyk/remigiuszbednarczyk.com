@@ -132,8 +132,10 @@ html {
   position: absolute;
   inset: 0;
   z-index: 10;
-  overflow: auto;
-  padding: 0.25rem 0;
+  /* Hidden, not auto: a scrollbar would betray that this is a panel laid over
+     the view rather than the view itself turned to code. The source is sized
+     (below) to sit inside the section's own box, so nothing is lost to it. */
+  overflow: hidden;
   opacity: 0;
   pointer-events: none;
 }
@@ -156,7 +158,10 @@ html {
   margin: 0;
   font-family: ui-monospace, "IBM Plex Mono", monospace;
   font-size: clamp(11px, 1.5vw, 13px);
-  line-height: 1.62;
+  /* Tight enough that the whole file clears the section's box at every width
+     without a scrollbar — measured at 1280, where the box is shortest
+     relative to the code. */
+  line-height: 1.5;
   color: var(--color-slate-200);
   white-space: pre-wrap;
   word-break: break-word;
