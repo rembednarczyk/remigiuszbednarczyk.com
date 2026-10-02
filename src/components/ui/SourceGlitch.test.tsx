@@ -1,52 +1,64 @@
 import { act, fireEvent, render } from "@testing-library/react";
+import { useRef } from "react";
 import { describe, expect, it } from "vitest";
 import { SourceGlitch } from "./SourceGlitch";
 
 /**
- * What matters is the contract the effect rests on: the section still renders,
- * the reveal is driven by an explicit, named button rather than a bare hover
- * (so touch and keyboard reach it), and activating it exposes the code. The
- * glitch itself is CSS and is exercised in the browser, not here.
+ * The contract the effect rests on: the section renders normally, its source
+ * stays out of the DOM until the trigger is used (so nothing faded sits in the
+ * page for the accessibility scan), and activating the trigger overwrites the
+ * section with highlighted source. The glitch itself is CSS, exercised in the
+ * browser rather than here.
  */
 
-const sample = (
-  <SourceGlitch file="Example.tsx" code={'const answer = 42; // the real source'}>
-    <p>rendered section</p>
-  </SourceGlitch>
-);
+function Harness() {
+  const ref = useRef<HTMLButtonElement>(null);
+  return (
+    <SourceGlitch code={'<p className="x">{heroData.name}</p>'} triggerRef={ref}>
+      <div>
+        <button ref={ref} type="button">
+          greeting
+        </button>
+        <p>rendered section</p>
+      </div>
+    </SourceGlitch>
+  );
+}
 
 describe("SourceGlitch", () => {
-  it("renders the section it wraps, with the source held out of the DOM until asked for", () => {
-    const { getByText, container } = render(sample);
+  it("renders the wrapped section, with the source held out of the DOM at rest", () => {
+    const { getByText, container } = render(<Harness />);
 
     expect(getByText("rendered section")).toBeTruthy();
-    // Not in the DOM at rest: nothing faded for the page's accessibility scan
-    // to trip over — the code mounts only when the panel opens.
     expect(container.querySelector(".source-peek__code")).toBeNull();
+    expect(container.querySelector(".source-peek__panel")?.getAttribute("aria-hidden")).toBe("true");
   });
 
-  it("is opened by a labelled button, not a hover — so touch and keyboard reach it", () => {
-    const { getByRole, container } = render(sample);
-    const trigger = getByRole("button", { name: /view this section's source — Example\.tsx/i });
+  it("overwrites the section with highlighted source when the trigger is used", () => {
+    const { getByText, container } = render(<Harness />);
+
+    act(() => {
+      // A keyboard/touch activation (click with detail 0) reveals it; focus
+      // alone deliberately does not.
+      fireEvent.click(getByText("greeting"));
+    });
+
+    const code = container.querySelector(".source-peek__code");
+    expect(code).not.toBeNull();
+    expect(code!.textContent).toContain("heroData.name");
+    // The highlighter ran: at least one token carries a colour class.
+    expect(code!.querySelector(".tk-tag, .tk-expr, .tk-str")).not.toBeNull();
+    expect(container.querySelector(".source-peek__panel")?.getAttribute("aria-hidden")).toBe("false");
+  });
+
+  it("marks the trigger expanded while the source is showing", () => {
+    const { getByText } = render(<Harness />);
+    const trigger = getByText("greeting");
 
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
     act(() => {
       fireEvent.click(trigger);
     });
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
-    expect(container.querySelector(".source-peek__code")?.textContent).toContain(
-      "const answer = 42;",
-    );
-  });
-
-  it("marks the panel hidden from assistive tech until it is opened", () => {
-    const { getByRole, container } = render(sample);
-    const panel = container.querySelector(".source-peek__panel");
-
-    expect(panel?.getAttribute("aria-hidden")).toBe("true");
-    act(() => {
-      fireEvent.click(getByRole("button"));
-    });
-    expect(panel?.getAttribute("aria-hidden")).toBe("false");
   });
 });

@@ -1,50 +1,54 @@
-import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, ReactNode, RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
+import { highlightTsx } from "../../lib/highlightTsx";
 
 /**
- * Wraps a section and lets a visitor peek at the real code behind it, revealed
- * with a deliberate glitch that settles to still, readable source.
+ * Reveals the real code behind a section by overwriting the section in place
+ * with a glitch, for as long as the trigger is hovered or focused.
  *
- * The trigger is an explicit `</>` button, not a hover on the whole section:
- * hover alone has no touch equivalent and fires while someone is only reading.
- * So a click, tap or Enter pins the panel open (and pins it shut again); on a
- * mouse, hovering the button is a quick peek that restores on leave. The code
- * is the component's own source, sliced from a `?raw` import in lib/sourcePeek
- * — see there for why it is not hand-copied.
+ * The trigger is not a separate button: a caller passes `triggerRef` pointing
+ * at an element it already renders — on the hero, the "Hello World" greeting —
+ * and this wires hover, focus, tap and keyboard onto it. Hovering the greeting
+ * shatters the whole section into its source; leaving the area (or pressing
+ * Escape) plays the shatter in reverse and restores the view. The code is not
+ * a floating terminal window: the panel fills the section's own box, so the
+ * view appears to turn into its source rather than open a popover.
  *
- * Motion lives in index.css as `source-glitch-*` keyframes: the open shatters
- * in over ~640ms and settles; the close plays it in reverse, a touch quicker,
- * so open and close read as one effect rather than a snap. A subtle hint
- * glitches the trigger every few seconds to say it is there, and stops for
- * good once the visitor opens anything. Under a reduced-motion preference the
- * global rule in index.css makes every glitch instant, the hint is never
- * scheduled, and the close skips its reverse pass — a plain crossfade.
- *
- * The trigger and the panel are `print:hidden`, like every other overlay; the
- * section's own content prints as it always did.
+ * The source is the component's own, sliced from a `?raw` import in
+ * lib/sourcePeek and coloured by lib/highlightTsx — not hand-copied, not a
+ * decorative mock. Motion is CSS (`source-glitch-*` in index.css), transform
+ * and opacity and clip-path only; the reduced-motion rule there makes it a
+ * plain crossfade and this never schedules the discovery hint under it. The
+ * panel is `print:hidden`, and the section's content prints as it always did.
  */
 
 type Phase = "idle" | "open" | "closing";
 
 interface SourceGlitchProps {
-  /** The component file's name, shown in the panel header. */
-  file: string;
-  /** The real source to reveal — from lib/sourcePeek, not written by hand. */
+  /** The component source to reveal — from lib/sourcePeek, not written here. */
   code: string;
-  /** The rendered section this peeks behind. */
+  /** The element that reveals it: a caller's own greeting, heading, etc. */
+  triggerRef: RefObject<HTMLElement | null>;
+  /** The rendered section this overwrites while open. */
   children: ReactNode;
 }
 
 const CLOSE_MS = 440;
 const HINT_EVERY_MS = 7000;
 
-export function SourceGlitch({ file, code, children }: SourceGlitchProps) {
+export function SourceGlitch({ code, triggerRef, children }: SourceGlitchProps) {
   const reduce = useReducedMotion();
   const [phase, setPhase] = useState<Phase>("idle");
-  const [pinned, setPinned] = useState(false);
   const [found, setFound] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<number>(0);
+  const phaseRef = useRef<Phase>("idle");
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  const tokens = useMemo(() => highlightTsx(code), [code]);
 
   const open = useCallback(() => {
     window.clearTimeout(closeTimer.current);
@@ -58,65 +62,104 @@ export function SourceGlitch({ file, code, children }: SourceGlitchProps) {
       setPhase("idle");
       return;
     }
-    // Keep the panel up for the reverse glitch, then clear it.
     setPhase((current) => (current === "idle" ? current : "closing"));
     closeTimer.current = window.setTimeout(() => setPhase("idle"), CLOSE_MS);
   }, [reduce]);
 
-  const toggle = () => {
-    if (pinned) {
-      setPinned(false);
-      close();
-    } else {
-      setPinned(true);
-      open();
-    }
-  };
+  // Wire the caller's own element as the trigger: hover and focus peek, tap
+  // and Enter toggle, Escape closes. Hover is gated to a mouse so a tap does
+  // not both toggle (click) and open (synthetic enter).
+  useEffect(() => {
+    const el = triggerRef.current;
+    if (!el) return;
 
-  // The discovery hint: a subtle glitch on the trigger every few seconds,
-  // never scheduled under reduced motion and stopped for good once the
-  // visitor has opened the panel. It no-ops while the tab is hidden.
+    const toggle = () => (phaseRef.current === "idle" ? open() : close());
+    const onEnter = (e: PointerEvent) => {
+      if (e.pointerType === "mouse") open();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      // Enter and Space come through as a native-button click (below); only
+      // Escape needs handling here. Focus deliberately does NOT open: a
+      // keyboard visitor tabbing past the greeting should not have the panel
+      // pop open and cover the controls after it — they activate on purpose.
+      if (e.key === "Escape") close();
+    };
+    const onClick = (e: PointerEvent) => {
+      // Keyboard activation (detail 0) and touch/pen toggle; a mouse peeks on
+      // hover, so a mouse click is left to do nothing rather than toggle shut.
+      if (e.detail === 0 || e.pointerType === "touch" || e.pointerType === "pen") toggle();
+    };
+
+    el.addEventListener("pointerenter", onEnter);
+    el.addEventListener("keydown", onKey);
+    el.addEventListener("click", onClick);
+    return () => {
+      el.removeEventListener("pointerenter", onEnter);
+      el.removeEventListener("keydown", onKey);
+      el.removeEventListener("click", onClick);
+    };
+  }, [triggerRef, open, close]);
+
+  // Keep the trigger's expanded-state announcement in step with the panel.
+  useEffect(() => {
+    triggerRef.current?.setAttribute("aria-expanded", String(phase !== "idle"));
+  }, [triggerRef, phase]);
+
+  // Discovery hint: a subtle glitch on the trigger every few seconds, stopped
+  // for good once the visitor opens it, never scheduled under reduced motion.
   useEffect(() => {
     if (reduce || found) return;
     const timer = window.setInterval(() => {
       const el = triggerRef.current;
       if (!el || document.hidden) return;
       el.classList.remove("is-hinting");
-      void el.offsetWidth; // restart the one-shot animation
+      void el.offsetWidth;
       el.classList.add("is-hinting");
     }, HINT_EVERY_MS);
     return () => window.clearInterval(timer);
-  }, [reduce, found]);
+  }, [triggerRef, reduce, found]);
+
+  // Tapping the revealed code dismisses it — the way a touch visitor closes it,
+  // since the covered greeting can no longer be tapped. Attached here rather
+  // than as a JSX handler so the panel stays a non-interactive container.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const onClick = () => close();
+    panel.addEventListener("click", onClick);
+    return () => panel.removeEventListener("click", onClick);
+  }, [close]);
 
   useEffect(() => () => window.clearTimeout(closeTimer.current), []);
 
   const isOpen = phase !== "idle";
 
   return (
-    <div className="source-peek" data-phase={phase}>
+    <div
+      ref={wrapRef}
+      className="source-peek"
+      data-phase={phase}
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse") close();
+      }}
+      onBlur={(e) => {
+        if (!wrapRef.current?.contains(e.relatedTarget)) close();
+      }}
+    >
       {children}
-      <button
-        ref={triggerRef}
-        type="button"
-        className="source-peek__trigger focus-ring print:hidden"
-        aria-expanded={isOpen}
-        aria-label={`View this section's source — ${file}`}
-        onClick={toggle}
-        onPointerEnter={(e) => {
-          if (e.pointerType === "mouse" && !pinned) open();
-        }}
-        onPointerLeave={(e) => {
-          if (e.pointerType === "mouse" && !pinned) close();
-        }}
-      >
-        &lt;/&gt; source
-      </button>
-      <div className="source-peek__panel print:hidden" aria-hidden={!isOpen}>
+      <div ref={panelRef} className="source-peek__panel print:hidden" aria-hidden={!isOpen}>
         {isOpen && (
-          <>
-            <div className="source-peek__file">⌁ {file}</div>
-            <pre className="source-peek__code">{code}</pre>
-          </>
+          <pre className="source-peek__code">
+            {tokens.map((token, index) =>
+              token.cls ? (
+                <span key={index} className={token.cls}>
+                  {token.text}
+                </span>
+              ) : (
+                <Fragment key={index}>{token.text}</Fragment>
+              ),
+            )}
+          </pre>
         )}
       </div>
     </div>

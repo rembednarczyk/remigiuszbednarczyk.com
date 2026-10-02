@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { m } from "motion/react";
 import { Terminal } from "lucide-react";
 import { useContent } from "../../data/content";
@@ -17,39 +18,44 @@ import { heroPeek } from "../../lib/sourcePeek";
  *
  * src/components/PageBodies.tsx is what maps the name to this component.
  *
- * The band is the first to wear the view-source glitch: SourceGlitch reveals
- * the greeting and name below, sliced from this very file by lib/sourcePeek
- * through the start/end marker comments around them. Move or rename those and
- * the peek's test turns red rather than showing an empty panel. (The marker
- * tokens themselves are deliberately not spelled in this comment, so the
- * slice finds the real markers and not a mention of them.)
+ * The band wears the view-source glitch: hovering the greeting overwrites the
+ * whole hero with its own source, sliced from this file by lib/sourcePeek
+ * through the start/end marker comments wrapping the content below. Move or
+ * rename those and the peek's test turns red rather than showing an empty
+ * panel. (The marker tokens are not spelled in this comment, so the slice
+ * finds the real markers and not a mention of them.)
  */
 export function HeroSection() {
   const { heroData } = useContent();
   const scrollToSection = useScrollToSection();
+  const greetingRef = useRef<HTMLButtonElement>(null);
 
   return (
     <section
       data-edit={editValue("hero")}
       className="relative min-h-[80vh] flex flex-col justify-center items-start"
     >
-      <SourceGlitch file={heroPeek.file} code={heroPeek.code}>
+      <SourceGlitch code={heroPeek.code} triggerRef={greetingRef}>
         <m.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
         >
           {/* peek:start */}
-          <p className="text-cyan-400 font-mono mb-4 flex items-center gap-2 print:hidden">
+          <button
+            ref={greetingRef}
+            type="button"
+            aria-label="Hello World, my name is — view the source behind this section"
+            className="source-peek__trigger text-cyan-400 font-mono mb-4 inline-flex items-center gap-2 min-h-11 bg-transparent border-0 p-0 text-left cursor-pointer focus-ring print:hidden"
+          >
             <Terminal aria-hidden="true" size={18} /> Hello World, my name is
-          </p>
+          </button>
           <h1
             itemProp="name"
             className="text-5xl md:text-7xl font-extrabold tracking-tight mb-4 text-white print:hidden"
           >
             {heroData.name}
           </h1>
-          {/* peek:end */}
           <h2
             itemProp="jobTitle"
             className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-slate-400 print:text-2xl print:text-black print:mb-4"
@@ -103,6 +109,7 @@ export function HeroSection() {
               Get in Touch
             </button>
           </div>
+          {/* peek:end */}
         </m.div>
       </SourceGlitch>
     </section>

@@ -101,61 +101,39 @@ html {
 /*
  * The view-source glitch (src/components/ui/SourceGlitch.tsx).
  *
- * A featured section wraps its content in `.source-peek`; the `</>` trigger
- * reveals the component's real code in a panel that shatters in and settles.
- * Only transform, opacity and clip-path animate, so it stays on the GPU. The
- * reduced-motion block above already neutralises these keyframes — every
- * animation there runs once and instantly — so a visitor who asked for less
- * motion gets a plain crossfade, and the component never schedules the hint.
+ * A featured section wraps its content in `.source-peek`; a trigger inside it
+ * — on the hero, the greeting — overwrites the section in place with its own
+ * source, which shatters in and settles. The panel fills the section's own
+ * box rather than floating as a window, so the view appears to turn into its
+ * code. Only transform, opacity and clip-path animate, so it stays on the
+ * GPU; the reduced-motion block above neutralises these keyframes into a
+ * plain crossfade and the component never schedules the hint under it.
  */
 .source-peek {
   position: relative;
 }
+/* The trigger is the caller's own element (the greeting), in the flow rather
+   than a separate chip: a hover/focus glow says it does something, and the
+   periodic hint glitch below draws the eye to it. */
 .source-peek__trigger {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 20;
-  /* Clears 44x44 (SC 2.5.5), the bar every control on this page holds to —
-     the tap area grows around the small label through padding and a min
-     height, the type stays 11px. */
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  font-family: ui-monospace, "IBM Plex Mono", monospace;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--color-slate-400);
-  background: rgba(2, 6, 23, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 10px;
-  padding: 0 14px;
-  cursor: pointer;
-  /* Readable at rest (so the contrast gate is satisfied) and discreet through
-     size and placement rather than transparency; hover brightens it. */
-  transition: color 160ms, border-color 160ms;
+  border-radius: 6px;
+  transition: color 160ms, text-shadow 160ms;
 }
-.source-peek:hover .source-peek__trigger,
+.source-peek__trigger:hover,
 .source-peek__trigger:focus-visible {
-  color: var(--color-slate-200);
-  border-color: rgba(34, 211, 238, 0.4);
-}
-.source-peek[data-phase="open"] .source-peek__trigger,
-.source-peek[data-phase="closing"] .source-peek__trigger {
-  color: var(--color-cyan-400);
-  border-color: rgba(34, 211, 238, 0.5);
-  opacity: 1;
+  color: var(--color-cyan-300, #67e8f9);
+  text-shadow: 0 0 14px rgba(34, 211, 238, 0.55);
 }
 
+/* The panel overwrites the section's box — no border, no corner, the page's
+   own ground — so it reads as the view becoming code, not a popover. */
 .source-peek__panel {
   position: absolute;
   inset: 0;
   z-index: 10;
   overflow: auto;
-  background: rgba(2, 6, 23, 0.95);
-  border: 1px solid rgba(34, 211, 238, 0.25);
-  border-radius: 1rem;
-  padding: clamp(1rem, 3vw, 1.75rem);
+  background: rgba(2, 6, 23, 0.97);
+  padding: 0.25rem 0;
   opacity: 0;
   pointer-events: none;
 }
@@ -164,21 +142,24 @@ html {
   opacity: 1;
   pointer-events: auto;
 }
-.source-peek__file {
-  font-family: ui-monospace, "IBM Plex Mono", monospace;
-  font-size: 11px;
-  color: var(--color-slate-500);
-  margin-bottom: 0.75rem;
-}
 .source-peek__code {
   margin: 0;
   font-family: ui-monospace, "IBM Plex Mono", monospace;
-  font-size: clamp(11px, 1.6vw, 13px);
+  font-size: clamp(11px, 1.5vw, 13px);
   line-height: 1.62;
   color: var(--color-slate-200);
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* Editor-like colours for the revealed source (lib/highlightTsx tokens). */
+.tk-tag { color: #56d4ea; }
+.tk-attr { color: #c4b5fd; }
+.tk-str { color: #9be59b; }
+.tk-expr { color: #fbbf24; }
+.tk-kw { color: #ff9ec7; }
+.tk-punct { color: #7f8ea8; }
+.tk-cm { color: #6b7a96; font-style: italic; }
 
 .source-peek[data-phase="open"] .source-peek__code {
   animation: source-glitch-in 0.64s steps(2, end) both;
