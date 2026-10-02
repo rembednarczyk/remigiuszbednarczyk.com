@@ -116,14 +116,20 @@ html {
   top: 0.75rem;
   right: 0.75rem;
   z-index: 20;
+  /* Clears 44x44 (SC 2.5.5), the bar every control on this page holds to —
+     the tap area grows around the small label through padding and a min
+     height, the type stays 11px. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-family: ui-monospace, "IBM Plex Mono", monospace;
   font-size: 11px;
   letter-spacing: 0.06em;
   color: var(--color-slate-400);
   background: rgba(2, 6, 23, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 7px;
-  padding: 4px 9px;
+  border-radius: 10px;
+  padding: 0 14px;
   cursor: pointer;
   /* Readable at rest (so the contrast gate is satisfied) and discreet through
      size and placement rather than transparency; hover brightens it. */
