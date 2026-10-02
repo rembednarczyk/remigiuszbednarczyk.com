@@ -125,14 +125,14 @@ html {
   text-shadow: 0 0 14px rgba(34, 211, 238, 0.55);
 }
 
-/* The panel overwrites the section's box — no border, no corner, the page's
-   own ground — so it reads as the view becoming code, not a popover. */
+/* The panel overwrites the section's box with no ground of its own — no
+   fill, no border, no corner — so the source reads as the view itself
+   becoming code over the page's own background, not a popover laid on top. */
 .source-peek__panel {
   position: absolute;
   inset: 0;
   z-index: 10;
   overflow: auto;
-  background: rgba(2, 6, 23, 0.97);
   padding: 0.25rem 0;
   opacity: 0;
   pointer-events: none;
@@ -141,6 +141,16 @@ html {
 .source-peek[data-phase="closing"] .source-peek__panel {
   opacity: 1;
   pointer-events: auto;
+}
+/* The live content fades out as the source shatters in — the panel is
+   transparent, so without this the two would stack and read as a mess. On
+   close it fades back while the source glitches away, meeting the reverse. */
+.source-peek__content {
+  transition: opacity 140ms ease;
+}
+.source-peek[data-phase="open"] .source-peek__content {
+  opacity: 0;
+  pointer-events: none;
 }
 .source-peek__code {
   margin: 0;
@@ -160,6 +170,7 @@ html {
 .tk-kw { color: #ff9ec7; }
 .tk-punct { color: #7f8ea8; }
 .tk-cm { color: #6b7a96; font-style: italic; }
+.tk-egg { color: #ffb3c7; font-style: italic; }
 
 .source-peek[data-phase="open"] .source-peek__code {
   animation: source-glitch-in 0.64s steps(2, end) both;

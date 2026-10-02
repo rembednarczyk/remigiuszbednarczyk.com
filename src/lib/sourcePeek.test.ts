@@ -1,33 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { heroPeek } from "./sourcePeek";
+import heroJson from "../content/hero.json?raw";
 
 /**
- * The panel behind the view-source glitch must show the component's real,
- * current source — the whole reason it is sliced from a `?raw` import rather
- * than hand-copied. These assert the extraction on the real HeroSection file,
- * so a change that moved or dropped the marked region, or left the markers
- * showing, fails here.
+ * The panel behind the view-source glitch must show the hero's real, current
+ * source — the reason it is the content file read through a `?raw` import
+ * rather than hand-copied. These assert against the real hero.json, so a
+ * change that stopped showing the live data, or let the markup's noise back
+ * in, fails here.
  */
 
 describe("the Hero source peek", () => {
-  it("names the file it came from", () => {
-    expect(heroPeek.file).toBe("HeroSection.tsx");
+  it("names the content file it came from", () => {
+    expect(heroPeek.file).toBe("hero.json");
   });
 
-  it("carries the real greeting and the name binding, straight from the source", () => {
-    expect(heroPeek.code).toContain("Hello World, my name is");
-    expect(heroPeek.code).toContain("{heroData.name}");
+  it("is the content file verbatim — the values the hero renders", () => {
+    expect(heroPeek.code).toContain("Remigiusz Bednarczyk");
+    // The placeholder is shown unfilled, as the file stores it: the panel is
+    // the source, not the rendered page.
+    expect(heroPeek.code).toContain("{{yearsOfExperience}}");
+    expect(heroPeek.code).toContain(heroJson.trim());
   });
 
-  it("strips the region markers, so the panel shows code and not scaffolding", () => {
-    expect(heroPeek.code).not.toContain("peek:start");
-    expect(heroPeek.code).not.toContain("peek:end");
+  it("carries the planted greeting for whoever opens it", () => {
+    expect(heroPeek.code).toContain("Reading the source?");
+    expect(heroPeek.code).toContain("Have a look at the rest of my portfolio.");
   });
 
-  it("is dedented to its own left margin, not the file's indentation", () => {
-    // The fragment lives several levels deep in the component; shown as-is it
-    // would open with a wall of leading spaces. The first line starts flush.
-    expect(heroPeek.code.startsWith(" ")).toBe(false);
-    expect(heroPeek.code.length).toBeGreaterThan(40);
+  it("shows only the words, none of the markup's scaffolding", () => {
+    // The whole point of showing the data file and not the JSX: no Tailwind
+    // classes, no print flags, nothing a reader has to look past.
+    expect(heroPeek.code).not.toContain("className");
+    expect(heroPeek.code).not.toContain("print:hidden");
   });
 });

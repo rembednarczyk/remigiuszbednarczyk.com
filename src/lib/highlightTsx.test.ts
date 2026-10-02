@@ -37,3 +37,35 @@ describe("highlightTsx", () => {
     expect(classOf(tokens, "const")).toBe("tk-kw");
   });
 });
+
+/**
+ * The hero peek shows a JSON file, not JSX, so the highlighter has to read
+ * those shapes too: a key is a field name, a `{{placeholder}}` is what the
+ * page fills in, and the planted greeting is a comment that should stand out.
+ */
+describe("highlightTsx on the JSON the hero shows", () => {
+  const json = `{\n  "value": "{{yearsOfExperience}}+",\n  "label": "Years Experience"\n}`;
+
+  it("re-joins to exactly the input, losing nothing", () => {
+    expect(highlightTsx(json).map((t) => t.text).join("")).toBe(json);
+  });
+
+  it("colours a key as a field, not a string value", () => {
+    const tokens = highlightTsx(json);
+    expect(classOf(tokens, '"value"')).toBe("tk-tag");
+    expect(classOf(tokens, '"label"')).toBe("tk-tag");
+    expect(classOf(tokens, '"Years Experience"')).toBe("tk-str");
+  });
+
+  it("pulls a placeholder out of its string and colours it as an expression", () => {
+    const tokens = highlightTsx(json);
+    expect(classOf(tokens, "{{yearsOfExperience}}")).toBe("tk-expr");
+  });
+
+  it("gives the planted greeting its own colour, apart from ordinary comments", () => {
+    const egg = highlightTsx("// Reading the source? good eye.");
+    expect(egg[0].cls).toBe("tk-egg");
+    const plain = highlightTsx("// just a note");
+    expect(plain[0].cls).toBe("tk-cm");
+  });
+});
