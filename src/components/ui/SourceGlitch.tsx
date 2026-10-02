@@ -112,8 +112,12 @@ export function SourceGlitch({ file, code, children }: SourceGlitchProps) {
         &lt;/&gt; source
       </button>
       <div className="source-peek__panel print:hidden" aria-hidden={!isOpen}>
-        <div className="source-peek__file">⌁ {file}</div>
-        <pre className="source-peek__code">{code}</pre>
+        {isOpen && (
+          <>
+            <div className="source-peek__file">⌁ {file}</div>
+            <pre className="source-peek__code">{code}</pre>
+          </>
+        )}
       </div>
     </div>
   );

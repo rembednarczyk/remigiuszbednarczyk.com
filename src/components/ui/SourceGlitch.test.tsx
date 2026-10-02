@@ -16,17 +16,17 @@ const sample = (
 );
 
 describe("SourceGlitch", () => {
-  it("renders the section it wraps, with the code already in the DOM", () => {
+  it("renders the section it wraps, with the source held out of the DOM until asked for", () => {
     const { getByText, container } = render(sample);
 
     expect(getByText("rendered section")).toBeTruthy();
-    expect(container.querySelector(".source-peek__code")?.textContent).toContain(
-      "const answer = 42;",
-    );
+    // Not in the DOM at rest: nothing faded for the page's accessibility scan
+    // to trip over — the code mounts only when the panel opens.
+    expect(container.querySelector(".source-peek__code")).toBeNull();
   });
 
   it("is opened by a labelled button, not a hover — so touch and keyboard reach it", () => {
-    const { getByRole } = render(sample);
+    const { getByRole, container } = render(sample);
     const trigger = getByRole("button", { name: /view this section's source — Example\.tsx/i });
 
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
@@ -34,6 +34,9 @@ describe("SourceGlitch", () => {
       fireEvent.click(trigger);
     });
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(container.querySelector(".source-peek__code")?.textContent).toContain(
+      "const answer = 42;",
+    );
   });
 
   it("marks the panel hidden from assistive tech until it is opened", () => {
