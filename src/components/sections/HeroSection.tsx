@@ -19,11 +19,9 @@ import { heroPeek } from "../../lib/sourcePeek";
  * src/components/PageBodies.tsx is what maps the name to this component.
  *
  * The band wears the view-source glitch: hovering the greeting overwrites the
- * whole hero with its own source, sliced from this file by lib/sourcePeek
- * through the start/end marker comments wrapping the content below. Move or
- * rename those and the peek's test turns red rather than showing an empty
- * panel. (The marker tokens are not spelled in this comment, so the slice
- * finds the real markers and not a mention of them.)
+ * whole hero with the source it is built from — src/content/hero.json, read
+ * verbatim by lib/sourcePeek — so what a reader sees behind the glitch is the
+ * data this component renders, not a copy that could drift from it.
  */
 export function HeroSection() {
   const { heroData } = useContent();
@@ -41,7 +39,6 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
         >
-          {/* peek:start */}
           <button
             ref={greetingRef}
             type="button"
@@ -109,7 +106,6 @@ export function HeroSection() {
               Get in Touch
             </button>
           </div>
-          {/* peek:end */}
         </m.div>
       </SourceGlitch>
     </section>

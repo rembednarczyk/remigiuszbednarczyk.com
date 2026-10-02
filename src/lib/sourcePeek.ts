@@ -1,56 +1,38 @@
-import heroRaw from "../components/sections/HeroSection.tsx?raw";
+import heroJson from "../content/hero.json?raw";
 
 /**
- * The fragment of a section's own source shown behind the view-source glitch.
+ * The source shown behind the view-source glitch on the hero.
  *
- * The code is sliced from the component file imported as text at build time
- * (Vite's `?raw`), never hand-copied — a copied snippet drifts away from the
- * component the first time either is edited, and the whole point of the effect
- * is that a visitor is reading the code that actually shipped. The range is
- * marked in the source with a `peek:start` / `peek:end` comment pair, and
- * `extractPeek` throws when the pair is missing the way `iconOf` and
- * `accentOf` throw on a name they do not have: a marker deleted by accident
- * fails the build rather than quietly leaving an empty panel.
+ * It is the section's real content file — src/content/hero.json — imported as
+ * text at build time (Vite's `?raw`), never hand-copied. A copied snippet
+ * drifts from the file the first time either is edited; this one cannot,
+ * because it *is* the file. The hero renders from exactly these values, down
+ * to the `{{yearsOfExperience}}` placeholder the page fills in at render, so a
+ * visitor reading the panel is reading what the page is built from.
+ *
+ * Showing the data file rather than the component's JSX is also what keeps the
+ * panel clean: the markup carries Tailwind classes and `print:hidden` flags
+ * that are noise to a reader, while the JSON is only the words. No slicing and
+ * no markers either — the file is shown whole.
+ *
+ * The easter egg is prepended here, not stored in the content: JSON has no
+ * comment syntax to hold it, and a greeting written for whoever opens the
+ * panel is not something the page should render.
  */
 
 interface SourcePeek {
-  /** The component file's name, shown as the panel's header. */
+  /** The file the code came from, shown as the panel's header. */
   file: string;
-  /** The real source between the markers, dedented. */
+  /** The egg, then the real content file verbatim. */
   code: string;
 }
 
-const START = "peek:start";
-const END = "peek:end";
+const EASTER_EGG = [
+  "// Reading the source? good eye.",
+  "// Have a look at the rest of my portfolio.",
+].join("\n");
 
-function dedent(block: string): string {
-  const lines = block.replace(/\s+$/, "").split("\n");
-  const bodies = lines.filter((line) => line.trim().length > 0);
-  const indent = bodies.length
-    ? Math.min(...bodies.map((line) => (/^ */.exec(line)?.[0].length ?? 0)))
-    : 0;
-  return lines
-    .map((line) => line.slice(indent))
-    .join("\n")
-    .trim();
-}
-
-function extractPeek(raw: string, file: string): string {
-  const from = raw.indexOf(START);
-  const to = raw.indexOf(END);
-  if (from === -1 || to === -1 || to < from) {
-    throw new Error(
-      `${file} has no ${START}…${END} region, so the view-source glitch has nothing to show behind it`,
-    );
-  }
-  // Between the end of the start marker's line and the start of the end
-  // marker's line, so neither marker comment appears in the panel.
-  const body = raw.slice(raw.indexOf("\n", from) + 1, raw.lastIndexOf("\n", to));
-  return dedent(body);
-}
-
-/** The Hero's greeting and name — the recognisable opener, and the first egg. */
 export const heroPeek: SourcePeek = {
-  file: "HeroSection.tsx",
-  code: extractPeek(heroRaw, "HeroSection.tsx"),
+  file: "hero.json",
+  code: `${EASTER_EGG}\n\n${heroJson.trim()}`,
 };

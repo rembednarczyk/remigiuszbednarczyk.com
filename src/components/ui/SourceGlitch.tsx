@@ -10,11 +10,12 @@ import { highlightTsx } from "../../lib/highlightTsx";
  * at an element it already renders — on the hero, the "Hello World" greeting —
  * and this wires hover, focus, tap and keyboard onto it. Hovering the greeting
  * shatters the whole section into its source; leaving the area (or pressing
- * Escape) plays the shatter in reverse and restores the view. The code is not
- * a floating terminal window: the panel fills the section's own box, so the
- * view appears to turn into its source rather than open a popover.
+ * Escape) plays the shatter in reverse and restores the view. The panel is
+ * transparent and fills the section's own box while its live content fades
+ * out beneath it, so the view appears to turn into its source in place — no
+ * window, no border, the page's own ground showing through.
  *
- * The source is the component's own, sliced from a `?raw` import in
+ * The source is the section's real content file, imported as text in
  * lib/sourcePeek and coloured by lib/highlightTsx — not hand-copied, not a
  * decorative mock. Motion is CSS (`source-glitch-*` in index.css), transform
  * and opacity and clip-path only; the reduced-motion rule there makes it a
@@ -146,7 +147,7 @@ export function SourceGlitch({ code, triggerRef, children }: SourceGlitchProps) 
         if (!wrapRef.current?.contains(e.relatedTarget)) close();
       }}
     >
-      {children}
+      <div className="source-peek__content">{children}</div>
       <div ref={panelRef} className="source-peek__panel print:hidden" aria-hidden={!isOpen}>
         {isOpen && (
           <pre className="source-peek__code">

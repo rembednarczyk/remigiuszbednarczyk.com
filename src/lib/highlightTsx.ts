@@ -5,15 +5,19 @@ export interface Token {
 }
 
 /**
- * A small, display-only syntax highlighter for the TSX fragments the
- * view-source glitch shows.
+ * A small, display-only highlighter for the source the view-source glitch
+ * shows — the hero's content file (src/content/hero.json) and the TSX
+ * fragments the component stories exercise.
  *
- * It is not a parser and does not try to be one: it colours comments,
- * strings, JSX tag and attribute names, and the identifiers inside a `{…}`
- * expression, which is enough to read like an editor. Real highlighting of a
- * whole TypeScript program is Shiki's job and a far heavier dependency than a
- * peek panel earns, so this stays a few hundred bytes and is tested on the
- * shapes the hero fragment actually contains.
+ * It is not a parser and does not try to be one: it colours comments, strings,
+ * JSON keys, JSX tag and attribute names, the `{{placeholder}}` the page fills
+ * in, and the identifiers inside a `{…}` expression — enough to read like an
+ * editor. Real highlighting of a whole program is Shiki's job and a far
+ * heavier dependency than a peek panel earns, so this stays a few hundred
+ * bytes and is tested on the shapes the hero actually shows.
+ *
+ * The easter egg the peek prepends is a line comment; it takes its own warm
+ * colour (`tk-egg`) so a reader's eye lands on it rather than on grey prose.
  */
 
 const KEYWORDS = new Set([
@@ -21,6 +25,11 @@ const KEYWORDS = new Set([
   "if", "else", "for", "while", "new", "await", "async", "as", "satisfies",
   "interface", "type", "default", "typeof", "in", "of",
 ]);
+
+/** A line comment that reads as the planted greeting, not ordinary scaffolding. */
+const EGG = /source\?|portfolio/i;
+/** A `{{name}}` the content carries and the page substitutes at render. */
+const PLACEHOLDER = /\{\{[^}]*\}\}/g;
 
 export function highlightTsx(code: string): Token[] {
   const tokens: Token[] = [];
@@ -53,8 +62,10 @@ export function highlightTsx(code: string): Token[] {
     }
     if (rest.startsWith("//")) {
       const end = code.indexOf("\n", i);
-      push(code.slice(i, end === -1 ? n : end), "tk-cm");
-      i = end === -1 ? n : end;
+      const to = end === -1 ? n : end;
+      const text = code.slice(i, to);
+      push(text, EGG.test(text) ? "tk-egg" : "tk-cm");
+      i = to;
       continue;
     }
 
@@ -65,8 +76,26 @@ export function highlightTsx(code: string): Token[] {
         if (code[j] === "\\") j += 1;
         j += 1;
       }
-      push(code.slice(i, Math.min(j + 1, n)), "tk-str");
-      i = Math.min(j + 1, n);
+      const end = Math.min(j + 1, n);
+      const str = code.slice(i, end);
+      // A `:` right after a string makes it a JSON key — a field name, not a
+      // value — so it takes the tag colour, the way a JSX attribute does.
+      if (/^\s*:/.test(code.slice(end))) {
+        push(str, "tk-tag");
+      } else {
+        // A value: pull any `{{placeholder}}` out as an expression, the way
+        // the page treats it; the rest of the span is a plain string.
+        let k = 0;
+        PLACEHOLDER.lastIndex = 0;
+        let match: RegExpExecArray | null;
+        while ((match = PLACEHOLDER.exec(str))) {
+          push(str.slice(k, match.index), "tk-str");
+          push(match[0], "tk-expr");
+          k = match.index + match[0].length;
+        }
+        push(str.slice(k), "tk-str");
+      }
+      i = end;
       continue;
     }
 
@@ -104,8 +133,8 @@ export function highlightTsx(code: string): Token[] {
       continue;
     }
 
-    // Words: keyword, attribute name (`word=`), component (`Capitalised`),
-    // an identifier inside an expression, or plain JSX text.
+    // Words: keyword, attribute name (`word=`), an identifier inside an
+    // expression, or plain JSX text.
     if (/[A-Za-z_$]/.test(c)) {
       const word = /^[\w$]+/.exec(rest)![0];
       const gap = /^\s*/.exec(code.slice(i + word.length))![0];
