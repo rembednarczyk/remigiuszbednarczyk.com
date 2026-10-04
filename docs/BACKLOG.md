@@ -6,6 +6,121 @@ decided against — not when it is forgotten.
 
 ---
 
+## The view-source glitch — its configuration, and the slices not cut
+
+Slice 1 shipped (#142, #143, #144, #145): hovering the hero greeting overwrites
+the hero in place with the content it is built from, in a transparent panel over
+the page's own ground, and leaving plays the shatter in reverse. This records
+where every part of it lives and what it is set to — so the next slice costs
+nothing to start — and what was deliberately left undone.
+
+### Where it is, and what it is set to
+
+- `src/components/ui/SourceGlitch.tsx` — the mechanism. A caller passes
+  `triggerRef` (its own element, not a button this renders) and `code`, and this
+  wires the trigger: mouse `pointerenter` opens; `pointerleave`, blur away from
+  the wrapper, the Escape key, or a tap on the code close; a keyboard or touch
+  activation toggles. Focus deliberately does **not** open — a visitor tabbing
+  past the greeting must not have the panel cover the controls after it. Three
+  phases, `idle`/`open`/`closing`; the close holds `closing` for `CLOSE_MS = 440`
+  so the reverse glitch can play, then drops to `idle`. A discovery hint pulses
+  the trigger every `HINT_EVERY_MS = 7000`, stops for good once opened, and is
+  never scheduled under reduced motion. `aria-expanded` tracks the panel, and the
+  `<pre>` mounts only while open, so no faded source sits in the page for the
+  accessibility scan at rest.
+- `src/lib/sourcePeek.ts` — what the hero shows: `src/content/hero.json` imported
+  whole as text (`?raw`) with the egg prepended. `EASTER_EGG` is the two lines
+  "Reading the source? good eye." / "Have a look at the rest of my portfolio.",
+  prepended here because JSON has no comment syntax to hold it.
+- `src/lib/highlightTsx.ts` — display-only tokeniser, reads both the hero's JSON
+  and the TSX the stories exercise: a `"key":` → `tk-tag`, a `{{placeholder}}`
+  pulled out of its string → `tk-expr`, the egg comment → `tk-egg`, plus strings,
+  keywords, JSX tags and attributes. Not a parser; Shiki would dwarf a peek panel.
+- `src/index.css` (`.source-peek*`) — the panel is `position:absolute; inset:0;
+  overflow:hidden` with no fill, so the source reads as the view itself turned to
+  code rather than a popover; `.source-peek__content` (the live hero) fades
+  `opacity 140ms` to 0 while open and back on close. Code is
+  `clamp(11px,1.5vw,13px)/1.5`, measured to clear the section's box at every width
+  with 60px to spare at 1280, and `overflow:hidden` makes "no scrollbar" a
+  guarantee rather than a near-miss. Glitch keyframes: `source-glitch-in 0.64s
+  steps(2,end)` (open), `source-glitch-out 0.42s steps(2,end)` (close),
+  `source-chip-glitch 0.34s steps(2,end)` (hint) — clip-path insets, a few px of
+  translateX, and a magenta/cyan split shadow. Token palette: tag `#56d4ea`, attr
+  `#c4b5fd`, str `#9be59b`, expr `#fbbf24`, kw `#ff9ec7`, punct `#7f8ea8`, cm
+  `#6b7a96`, egg `#ffb3c7`. The global `prefers-reduced-motion` block collapses
+  every animation to ~instant, so the effect becomes a plain swap and the hint
+  never pulses.
+- `src/components/sections/HeroSection.tsx` — the trigger is the greeting
+  `<button class="source-peek__trigger … min-h-11 … print:hidden">`, and the whole
+  hero is wrapped in `<SourceGlitch code={heroPeek.code} triggerRef={greetingRef}>`.
+- The gates a slice must keep in step, because each new trigger is a focusable
+  44×44 control: `EXPECTED_KEYBOARD_STOPS = 30` and
+  `EXPECTED_CONTROLS_UNDER_THE_BANNER = {1280:30, 768:24}`
+  (`scripts/runFocusIndicator.ts`), and `EXPECTED_TARGETS = 259`
+  (`scripts/runTargetSize.ts`). Slice 1 held these because the greeting replaced
+  an earlier `</>` button one-for-one; a slice that gives a trigger to a section
+  that had none will raise all three, and the trigger must clear 44×44 or
+  `check:targets` fails it — as the first `</>` chip did, at 19px.
+
+### It survives the editor, with one divergence
+
+Checked against the preview seam (`src/preview/PreviewApp.tsx`,
+`src/preview/edit.ts`, `src/data/content.ts`):
+
+- **Editing the hero still works.** The whole glitch lives inside
+  `<section data-edit="hero.json">`, so the preview's document-level click
+  listener — `pickAt`, which walks `closest('[data-edit]')` — picks `hero.json`
+  from a click anywhere in it, the revealed code included. A mouse click does not
+  open the panel (open is hover-only; the click handler fires only on `detail===0`
+  or touch/pen), so the pick is never swallowed, and the editor's `[data-editing]`
+  outline lands on the hero section unchanged.
+- **The one divergence: the panel shows build-time source, not the live edit.**
+  `heroPeek.code` is a module-level `?raw` import, captured at build. The hero
+  *text* in the preview redraws live from `buildContent(editedRaw)` through
+  `useContent()`, but the peek does not read that context — so while the owner is
+  editing `hero.json` the panel reveals the *shipped* JSON, not the unsaved
+  change. On the deployed page there is no divergence (build-time is what
+  shipped), so a visitor always sees matching text and source; only the editor's
+  live preview, mid-edit, shows the two apart. Arguably correct — the peek's
+  thesis is "the code that actually shipped" — and threading raw content through
+  the context to close it is more than a momentary editor-only mismatch is worth.
+  Recorded, not fixed.
+- **Minor friction, not a defect:** in the editor, mousing over the greeting opens
+  the panel and the hint pulses every 7s, which can distract while editing; the
+  owner's click to pick the hero also closes it. Left as is.
+
+(These are readings of the seam's code, not a run against the editor app, which
+lives in the other repository and not in this container.)
+
+### The slices not yet cut
+
+The effect earns its keep by being rare — "sections with attractive code and
+maybe an egg inside," not every band. The restraint the find-animation pass
+asks for holds: a short list, highest leverage first.
+
+- **The quote / thinking band.** `thinking.json` is one short, clean document —
+  the natural home for a second egg. It has no greeting to hang the trigger on, so
+  a slice here must add one (the attribution line, or a small glyph) that clears
+  44×44 and raises the three gate counts above. Highest leverage: smallest,
+  cleanest source, and a quote is already a place a reader lingers.
+- **The about band.** The intro prose, triggered from its heading — more source
+  than the quote, less than the hero.
+- **The egg chain, deferred on purpose.** The hero egg ends "Have a look at the
+  rest of my portfolio" with no "more coming" teaser; the owner asked to hold that
+  until a second slice exists to point at. When a second peek lands, the two eggs
+  can breadcrumb to each other.
+- **A general `peek` per section**, each built from its own content file the way
+  `heroPeek` is, sharing `SourceGlitch` and `highlightTsx`. The editor divergence
+  above applies to every one, and each trigger costs the three gate counts —
+  reasons to cut few slices, not many.
+
+Rejected for now: a "copy the source" affordance (it turns a delight into a
+utility and invites reading the panel as a real editor), and glitching any
+information-dense or high-frequency surface — the navigation, the CTAs, the
+metric tiles — which the find-animation gate rejects outright.
+
+---
+
 ## Merged branches delete themselves
 
 The `claude/*` and `dependabot/*` branches piled up — thirty-odd — because
