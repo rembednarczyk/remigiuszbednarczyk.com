@@ -49,20 +49,30 @@ function installed(name: string): InstalledManifest | null {
 /**
  * The majors a range admits.
  *
- * Deliberately narrow: it understands the two forms the Storybook packages
- * actually publish, a caret comparator and a list of them joined by `||`,
- * and throws on anything else. A parser that quietly returned "no opinion"
- * for a form it did not recognise would turn this check off by accident, on
- * exactly the day someone published a range worth reading.
+ * Deliberately narrow: it understands the forms the Storybook packages
+ * actually publish — a caret comparator, an open-ended `>=N` lower bound, and
+ * a list of them joined by `||` — and throws on anything else. A parser that
+ * quietly returned "no opinion" for a form it did not recognise would turn
+ * this check off by accident, on exactly the day someone published a range
+ * worth reading.
+ *
+ * The `>=N` form arrived when the Storybook 10.6 packages began publishing
+ * `… || ^11.0.0-0 || >=11` beside the caret list. It admits N and every major
+ * above, but the exact majors this check cares about are still spelled as
+ * caret clauses next to it, so contributing N is enough — and a compound
+ * comparator with an upper bound (`>=8 <11`) still throws, because the `$`
+ * refuses the trailing ` <11`.
  */
 function admittedMajors(range: string): Set<string> {
   return new Set(
     range.split("||").map((part) => {
-      const match = /^\s*\^?(\d+)\.\d+\.\d+(-[\w.]+)?\s*$/.exec(part);
-      if (!match) {
-        throw new Error(`unrecognised peer range "${part.trim()}" in "${range}"`);
-      }
-      return match[1];
+      const caret = /^\s*\^?(\d+)\.\d+\.\d+(-[\w.]+)?\s*$/.exec(part);
+      if (caret) return caret[1];
+
+      const lower = /^\s*>=\s*(\d+)(?:\.\d+){0,2}(-[\w.]+)?\s*$/.exec(part);
+      if (lower) return lower[1];
+
+      throw new Error(`unrecognised peer range "${part.trim()}" in "${range}"`);
     }),
   );
 }
@@ -76,9 +86,16 @@ describe("admittedMajors", () => {
     expect([...admittedMajors("^0.0.0-0 || ^10.0.0 || ^10.6.0-0")]).toEqual(["0", "10"]);
   });
 
+  it("reads the open-ended lower bound the 10.6 packages publish", () => {
+    // The real range that stopped the batch: a `>=N` clause beside the caret
+    // list. It admits 10 (from the carets) and 11 (from `^11.0.0-0`/`>=11`).
+    expect([...admittedMajors("^10.6.0-0 || ^11.0.0-0 || >=11")]).toEqual(["10", "11"]);
+  });
+
   it("refuses a range it does not understand rather than admitting everything", () => {
     // The failure mode this avoids: a silent "no majors" would make every
-    // package look acceptable and turn the check below off.
+    // package look acceptable and turn the check below off. A lower bound with
+    // an upper comparator beside it is still not understood.
     expect(() => admittedMajors(">=8 <11")).toThrow(/unrecognised peer range/);
   });
 });
